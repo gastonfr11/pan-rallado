@@ -33,7 +33,7 @@ def optimizar_ruta(negocios: list, origen: str = "Pocitos, Montevideo") -> list:
 
     if len(orden_optimizado) != len(negocios):
         print(f"   ⚠️ Orden inesperado ({len(orden_optimizado)} vs {len(negocios)}), se mantiene orden original")
-        return negocios
+        return negocios, None, None
 
     negocios_ordenados = [negocios[i] for i in orden_optimizado]
 
@@ -44,4 +44,4 @@ def optimizar_ruta(negocios: list, origen: str = "Pocitos, Montevideo") -> list:
     print(f"   🗺️  Distancia total: {distancia_total:.1f} km")
     print(f"   ⏱️  Tiempo estimado de viaje: {tiempo_total} minutos\n")
 
-    return negocios_ordenados
+    return negocios_ordenados, distancia_total, tiempo_total

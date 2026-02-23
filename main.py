@@ -7,6 +7,8 @@ from database import init_db, fue_visitado_recientemente, registrar_visita
 
 from router import optimizar_ruta
 
+from notifier import enviar_roadmap_whatsapp
+
 # Inicializar base de datos
 init_db()
 
@@ -51,11 +53,14 @@ if __name__ == "__main__":
     print("Analizando con IA y seleccionando los mejores candidatos...")
     seleccionados = score_negocios(negocios)
     
+    distancia_km = None
+    tiempo_min = None
+
     if len(seleccionados) < 2:
         print("⚠️ No hay suficientes negocios válidos para optimizar ruta")
     else:
         print("Optimizando ruta...")
-        seleccionados = optimizar_ruta(seleccionados)
+        seleccionados, distancia_km, tiempo_min = optimizar_ruta(seleccionados)
 
     print(f"\n🗓️  TOP 10 negocios para visitar en {barrio}:\n")
     for i, n in enumerate(seleccionados, 1):
@@ -65,3 +70,4 @@ if __name__ == "__main__":
         print()
         registrar_visita(n['nombre'], n['direccion'], barrio)
 
+    enviar_roadmap_whatsapp(barrio, seleccionados, distancia_km, tiempo_min)
