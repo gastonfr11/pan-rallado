@@ -3,6 +3,11 @@ import os
 from dotenv import load_dotenv
 from scorer import score_negocios
 
+from database import init_db, fue_visitado_recientemente, registrar_visita
+
+# Inicializar base de datos
+init_db()
+
 load_dotenv(override=True)
 
 gmaps = googlemaps.Client(key=os.getenv("GOOGLE_MAPS_API_KEY"))
@@ -28,8 +33,9 @@ def buscar_negocios(barrio: str) -> list:
         )
         for lugar in resultado["results"]:
             if lugar["name"] not in vistos and es_direccion_valida(lugar):
-                vistos.add(lugar["name"])
-                todos.append(lugar)
+                if not fue_visitado_recientemente(lugar["name"], lugar.get("formatted_address", "")):
+                    vistos.add(lugar["name"])
+                    todos.append(lugar)
     
     return todos
 
@@ -49,4 +55,5 @@ if __name__ == "__main__":
         print(f"   📍 {n['direccion']}")
         print(f"   💡 {n['razon']}")
         print()
+        registrar_visita(n['nombre'], n['direccion'], barrio)
 
