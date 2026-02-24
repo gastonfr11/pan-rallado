@@ -62,7 +62,11 @@ Seleccioná exactamente 10 negocios.
             seleccionados.append({
                 "nombre": negocio["name"],
                 "direccion": negocio.get("formatted_address", "Sin dirección"),
-                "razon": item["razon"]
+                "razon": item["razon"],
+                "tipo": negocio.get("types", ["negocio"])[0].replace("_", " "),
+                "rating": negocio.get("rating", None),
+                "lat": negocio["geometry"]["location"]["lat"],
+                "lng": negocio["geometry"]["location"]["lng"],
             })
 
     return seleccionados

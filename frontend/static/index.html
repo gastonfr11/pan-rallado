@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Pan Rallado — Agente de Ventas</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #0f0f0f;
+      color: #e0e0e0;
+      min-height: 100vh;
+    }
+
+    header {
+      background: #1a1a1a;
+      border-bottom: 2px solid #f5a623;
+      padding: 20px 40px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    header h1 {
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: #f5a623;
+      letter-spacing: 1px;
+    }
+
+    header p {
+      font-size: 0.85rem;
+      color: #888;
+      margin-top: 2px;
+    }
+
+    .logo { font-size: 2rem; }
+
+    .container {
+      max-width: 1100px;
+      margin: 40px auto;
+      padding: 0 20px;
+    }
+
+    .panel {
+      background: #1a1a1a;
+      border: 1px solid #2a2a2a;
+      border-radius: 12px;
+      padding: 28px;
+      margin-bottom: 24px;
+    }
+
+    .panel h2 {
+      font-size: 1rem;
+      color: #f5a623;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 20px;
+    }
+
+    .form-row {
+      display: flex;
+      gap: 16px;
+      align-items: flex-end;
+      flex-wrap: wrap;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      flex: 1;
+    }
+
+    label {
+      font-size: 0.8rem;
+      color: #888;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    select {
+      background: #0f0f0f;
+      border: 1px solid #333;
+      color: #e0e0e0;
+      padding: 12px 16px;
+      border-radius: 8px;
+      font-size: 1rem;
+      cursor: pointer;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    select:focus { border-color: #f5a623; }
+
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 0;
+    }
+
+    .toggle {
+      position: relative;
+      width: 44px;
+      height: 24px;
+    }
+
+    .toggle input { display: none; }
+
+    .toggle-slider {
+      position: absolute;
+      inset: 0;
+      background: #333;
+      border-radius: 24px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .toggle-slider::before {
+      content: '';
+      position: absolute;
+      width: 18px;
+      height: 18px;
+      background: white;
+      border-radius: 50%;
+      top: 3px;
+      left: 3px;
+      transition: transform 0.2s;
+    }
+
+    .toggle input:checked + .toggle-slider { background: #f5a623; }
+    .toggle input:checked + .toggle-slider::before { transform: translateX(20px); }
+
+    .btn {
+      background: #f5a623;
+      color: #000;
+      border: none;
+      padding: 13px 32px;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+      white-space: nowrap;
+    }
+
+    .btn:hover { background: #e09510; }
+    .btn:active { transform: scale(0.97); }
+    .btn:disabled { background: #444; color: #666; cursor: not-allowed; }
+
+    #status {
+      display: none;
+      align-items: center;
+      gap: 12px;
+      padding: 16px 20px;
+      background: #111;
+      border: 1px solid #2a2a2a;
+      border-radius: 8px;
+      margin-bottom: 24px;
+    }
+
+    .spinner {
+      width: 20px;
+      height: 20px;
+      border: 3px solid #333;
+      border-top-color: #f5a623;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    #resultados { display: none; }
+
+    .stats-row {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+    }
+
+    .stat {
+      background: #111;
+      border: 1px solid #2a2a2a;
+      border-radius: 10px;
+      padding: 16px 20px;
+      flex: 1;
+      min-width: 140px;
+    }
+
+    .stat .valor {
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: #f5a623;
+    }
+
+    .stat .etiqueta {
+      font-size: 0.75rem;
+      color: #666;
+      margin-top: 4px;
+      text-transform: uppercase;
+    }
+
+    /* Layout mapa + lista */
+    .contenido-row {
+      display: grid;
+      grid-template-columns: 1fr 380px;
+      gap: 20px;
+      align-items: start;
+    }
+
+    @media (max-width: 768px) {
+      .contenido-row { grid-template-columns: 1fr; }
+    }
+
+    #mapa {
+      width: 100%;
+      height: 520px;
+      border-radius: 12px;
+      border: 1px solid #2a2a2a;
+      background: #111;
+    }
+
+    .lista-scroll {
+      max-height: 520px;
+      overflow-y: auto;
+      scrollbar-width: thin;
+      scrollbar-color: #333 #111;
+    }
+
+    .negocio-card {
+      background: #111;
+      border: 1px solid #2a2a2a;
+      border-radius: 10px;
+      padding: 14px 16px;
+      margin-bottom: 10px;
+      display: flex;
+      gap: 14px;
+      align-items: flex-start;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+    }
+
+    .negocio-card:hover { border-color: #f5a623; background: #1a1500; }
+    .negocio-card.activo { border-color: #f5a623; background: #1a1500; }
+
+    .num {
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: #f5a623;
+      min-width: 28px;
+      text-align: center;
+      margin-top: 2px;
+    }
+
+    .negocio-info h3 {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: #fff;
+      margin-bottom: 3px;
+    }
+
+    .negocio-info .dir {
+      font-size: 0.8rem;
+      color: #666;
+      margin-bottom: 5px;
+    }
+
+    .negocio-info .razon {
+      font-size: 0.8rem;
+      color: #aaa;
+      font-style: italic;
+    }
+
+    .badge {
+      display: inline-block;
+      background: #1f1a0d;
+      color: #f5a623;
+      border: 1px solid #f5a62344;
+      border-radius: 20px;
+      padding: 2px 8px;
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 4px;
+    }
+
+    .error-msg {
+      background: #1a0f0f;
+      border: 1px solid #5a1a1a;
+      color: #ff6b6b;
+      padding: 16px 20px;
+      border-radius: 8px;
+      margin-bottom: 16px;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">🥖</div>
+  <div>
+    <h1>PAN RALLADO</h1>
+    <p>Agente de ventas inteligente — Montevideo</p>
+  </div>
+</header>
+
+<div class="container">
+
+  <div class="panel">
+    <h2>Generar Hoja de Ruta</h2>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Barrio</label>
+        <select id="barrio">
+          <option value="">Cargando barrios...</option>
+        </select>
+      </div>
+      <button class="btn" id="btnGenerar" onclick="generarRoadmap()">Generar</button>
+    </div>
+    <div class="toggle-row" style="margin-top: 16px;">
+      <label class="toggle">
+        <input type="checkbox" id="whatsapp">
+        <span class="toggle-slider"></span>
+      </label>
+      <span style="font-size: 0.9rem; color: #aaa;">Enviar por WhatsApp</span>
+    </div>
+  </div>
+
+  <div id="status">
+    <div class="spinner"></div>
+    <span id="statusText">Buscando negocios...</span>
+  </div>
+
+  <div id="resultados">
+    <div class="stats-row" id="statsRow"></div>
+    <div class="contenido-row">
+      <div id="mapa"></div>
+      <div class="lista-scroll" id="listaNegocios"></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  let mapa = null;
+  let markers = [];
+  let infoWindows = [];
+  let negociosData = [];
+
+  async function cargarBarrios() {
+    try {
+      const res = await fetch('/barrios');
+      const data = await res.json();
+      const select = document.getElementById('barrio');
+      select.innerHTML = data.barrios.map(b =>
+        `<option value="${b}">${b}</option>`
+      ).join('');
+    } catch (e) {
+      document.getElementById('barrio').innerHTML =
+        '<option value="Pocitos">Pocitos</option>';
+    }
+  }
+
+  async function generarRoadmap() {
+    const barrio = document.getElementById('barrio').value;
+    const whatsapp = document.getElementById('whatsapp').checked;
+    const btn = document.getElementById('btnGenerar');
+
+    if (!barrio) return;
+
+    btn.disabled = true;
+    document.getElementById('resultados').style.display = 'none';
+    const status = document.getElementById('status');
+    status.style.display = 'flex';
+    document.getElementById('statusText').textContent =
+      `Buscando negocios en ${barrio}...`;
+
+    try {
+      const res = await fetch('/generar-roadmap', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ barrio, enviar_whatsapp: whatsapp })
+      });
+
+      const data = await res.json();
+      status.style.display = 'none';
+
+      if (data.error) {
+        document.getElementById('resultados').style.display = 'block';
+        document.getElementById('listaNegocios').innerHTML =
+          `<div class="error-msg">⚠️ ${data.error}</div>`;
+        return;
+      }
+
+      negociosData = data.seleccionados;
+      mostrarResultados(data);
+
+    } catch (e) {
+      status.style.display = 'none';
+      document.getElementById('resultados').style.display = 'block';
+      document.getElementById('listaNegocios').innerHTML =
+        `<div class="error-msg">❌ Error de conexión con el servidor</div>`;
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  function mostrarResultados(data) {
+    document.getElementById('resultados').style.display = 'block';
+
+    const stats = [
+      { valor: data.total_encontrados, etiqueta: 'Encontrados' },
+      { valor: data.seleccionados.length, etiqueta: 'Seleccionados' },
+      { valor: data.distancia_km ? `${data.distancia_km} km` : '—', etiqueta: 'Distancia' },
+      { valor: data.tiempo_min ? `${data.tiempo_min} min` : '—', etiqueta: 'Tiempo viaje' },
+    ];
+
+    document.getElementById('statsRow').innerHTML = stats.map(s => `
+      <div class="stat">
+        <div class="valor">${s.valor}</div>
+        <div class="etiqueta">${s.etiqueta}</div>
+      </div>
+    `).join('');
+
+    document.getElementById('listaNegocios').innerHTML =
+      data.seleccionados.map((n, i) => `
+        <div class="negocio-card" id="card-${i}" onclick="focusMarker(${i})">
+          <div class="num">${i + 1}</div>
+          <div class="negocio-info">
+            <div class="badge">${n.tipo || 'negocio'}</div>
+            <h3>${n.nombre}</h3>
+            <div class="dir">📍 ${n.direccion}</div>
+            <div class="razon">💡 ${n.razon}</div>
+          </div>
+        </div>
+      `).join('');
+
+    iniciarMapa(data.seleccionados);
+  }
+
+  function iniciarMapa(negocios) {
+    // Limpiar markers anteriores
+    markers.forEach(m => m.setMap(null));
+    markers = [];
+    infoWindows = [];
+
+    const centro = { lat: negocios[0].lat, lng: negocios[0].lng };
+
+    if (!mapa) {
+      mapa = new google.maps.Map(document.getElementById('mapa'), {
+        zoom: 14,
+        center: centro,
+        styles: mapaNocturno(),
+        mapTypeControl: false,
+        streetViewControl: false,
+        fullscreenControl: false,
+      });
+    } else {
+      mapa.setCenter(centro);
+      mapa.setZoom(14);
+    }
+
+    const bounds = new google.maps.LatLngBounds();
+
+    negocios.forEach((n, i) => {
+      const pos = { lat: n.lat, lng: n.lng };
+      bounds.extend(pos);
+
+      const marker = new google.maps.Marker({
+        position: pos,
+        map: mapa,
+        title: n.nombre,
+        label: {
+          text: String(i + 1),
+          color: '#000',
+          fontWeight: 'bold',
+          fontSize: '12px',
+        },
+        icon: {
+          path: google.maps.SymbolPath.CIRCLE,
+          scale: 18,
+          fillColor: '#f5a623',
+          fillOpacity: 1,
+          strokeColor: '#000',
+          strokeWeight: 1.5,
+        }
+      });
+
+      const infoWindow = new google.maps.InfoWindow({
+        content: `
+          <div style="font-family: Segoe UI, sans-serif; max-width: 220px; padding: 4px;">
+            <strong style="font-size: 14px;">${n.nombre}</strong>
+            <p style="color: #555; font-size: 12px; margin: 4px 0;">${n.direccion}</p>
+            <p style="color: #888; font-size: 11px; font-style: italic;">${n.razon}</p>
+          </div>
+        `
+      });
+
+      marker.addListener('click', () => {
+        infoWindows.forEach(iw => iw.close());
+        infoWindow.open(mapa, marker);
+        destacarCard(i);
+      });
+
+      markers.push(marker);
+      infoWindows.push(infoWindow);
+    });
+
+    mapa.fitBounds(bounds);
+  }
+
+  function focusMarker(i) {
+    infoWindows.forEach(iw => iw.close());
+    infoWindows[i].open(mapa, markers[i]);
+    mapa.panTo(markers[i].getPosition());
+    mapa.setZoom(16);
+    destacarCard(i);
+  }
+
+  function destacarCard(i) {
+    document.querySelectorAll('.negocio-card').forEach(c => c.classList.remove('activo'));
+    const card = document.getElementById(`card-${i}`);
+    if (card) {
+      card.classList.add('activo');
+      card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  }
+
+  function mapaNocturno() {
+    return [
+      { elementType: 'geometry', stylers: [{ color: '#1a1a2e' }] },
+      { elementType: 'labels.text.fill', stylers: [{ color: '#8ec3b9' }] },
+      { elementType: 'labels.text.stroke', stylers: [{ color: '#1a3646' }] },
+      { featureType: 'road', elementType: 'geometry', stylers: [{ color: '#2c2c54' }] },
+      { featureType: 'road', elementType: 'geometry.stroke', stylers: [{ color: '#212a37' }] },
+      { featureType: 'road.highway', elementType: 'geometry', stylers: [{ color: '#3c3c7a' }] },
+      { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#0d1b2a' }] },
+      { featureType: 'poi', stylers: [{ visibility: 'off' }] },
+      { featureType: 'transit', stylers: [{ visibility: 'off' }] },
+    ];
+  }
+
+  cargarBarrios();
+</script>
+
+<!-- Google Maps -->
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDYHfHRh3mcxWFNK8l3CvTldIWMLPiuJMY"></script>
+
+</body>
+</html>
