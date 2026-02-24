@@ -26,6 +26,7 @@ app.mount("/static", StaticFiles(directory=static_path), name="static")
 class RoadmapRequest(BaseModel):
     barrio: str
     enviar_whatsapp: bool = False
+    modo: str = "chico"  # "chico" o "grande"
 
 @app.get("/")
 def root():
@@ -34,13 +35,14 @@ def root():
 
 @app.get("/barrios")
 def get_barrios():
-    return {"barrios": main.BARRIOS}
+    return {"barrios": list(main.BARRIOS.keys())}
 
 @app.post("/generar-roadmap")
 def generar_roadmap(req: RoadmapRequest):
     resultado = main.generar_roadmap(
         barrio=req.barrio,
-        enviar_whatsapp=req.enviar_whatsapp
+        enviar_whatsapp=req.enviar_whatsapp,
+        modo=req.modo
     )
     return resultado
 
