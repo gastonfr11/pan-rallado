@@ -43,3 +43,52 @@ def generar_roadmap(req: RoadmapRequest):
         enviar_whatsapp=req.enviar_whatsapp
     )
     return resultado
+
+from groq import Groq
+from typing import List
+
+groq_client = Groq()
+
+class Mensaje(BaseModel):
+    role: str
+    content: str
+
+class ChatRequest(BaseModel):
+    mensajes: List[Mensaje]
+    negocio: dict
+
+@app.post("/chat")
+def chat(req: ChatRequest):
+    system_prompt = f"""Sos un asistente comercial de una distribuidora de pan rallado en Uruguay.
+Estás ayudando a un vendedor que está por visitar o acaba de visitar este negocio:
+
+- Nombre: {req.negocio.get('nombre')}
+- Dirección: {req.negocio.get('direccion')}
+- Tipo: {req.negocio.get('tipo')}
+- Por qué fue seleccionado: {req.negocio.get('razon')}
+
+Tu rol es:
+1. Responder preguntas sobre el negocio y cómo abordarlo
+2. Generar mensajes de WhatsApp personalizados cuando te lo pidan
+
+Cuando generes mensajes de WhatsApp:
+- Escribilos en tono amigable y profesional, como habla un vendedor uruguayo
+- Que sean cortos (máximo 4 líneas)
+- Personalizados para este negocio específico
+- Sin emojis excesivos
+
+Tipos de mensajes que podés generar:
+- Presentación comercial (primer contacto)
+- Seguimiento post-visita
+- Oferta o promoción
+- Recordatorio de pedido"""
+
+    respuesta = groq_client.chat.completions.create(
+        model="llama-3.3-70b-versatile",
+        messages=[
+            {"role": "system", "content": system_prompt},
+            *[{"role": m.role, "content": m.content} for m in req.mensajes]
+        ]
+    )
+
+    return {"respuesta": respuesta.choices[0].message.content}

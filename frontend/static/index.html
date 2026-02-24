@@ -23,26 +23,11 @@
       gap: 16px;
     }
 
-    header h1 {
-      font-size: 1.6rem;
-      font-weight: 700;
-      color: #f5a623;
-      letter-spacing: 1px;
-    }
-
-    header p {
-      font-size: 0.85rem;
-      color: #888;
-      margin-top: 2px;
-    }
-
+    header h1 { font-size: 1.6rem; font-weight: 700; color: #f5a623; letter-spacing: 1px; }
+    header p { font-size: 0.85rem; color: #888; margin-top: 2px; }
     .logo { font-size: 2rem; }
 
-    .container {
-      max-width: 1100px;
-      margin: 40px auto;
-      padding: 0 20px;
-    }
+    .container { max-width: 1200px; margin: 40px auto; padding: 0 20px; }
 
     .panel {
       background: #1a1a1a;
@@ -52,249 +37,214 @@
       margin-bottom: 24px;
     }
 
-    .panel h2 {
-      font-size: 1rem;
-      color: #f5a623;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      margin-bottom: 20px;
-    }
+    .panel h2 { font-size: 1rem; color: #f5a623; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 20px; }
 
-    .form-row {
-      display: flex;
-      gap: 16px;
-      align-items: flex-end;
-      flex-wrap: wrap;
-    }
+    .form-row { display: flex; gap: 16px; align-items: flex-end; flex-wrap: wrap; }
+    .form-group { display: flex; flex-direction: column; gap: 8px; flex: 1; }
 
-    .form-group {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      flex: 1;
-    }
-
-    label {
-      font-size: 0.8rem;
-      color: #888;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
+    label { font-size: 0.8rem; color: #888; text-transform: uppercase; letter-spacing: 0.5px; }
 
     select {
-      background: #0f0f0f;
-      border: 1px solid #333;
-      color: #e0e0e0;
-      padding: 12px 16px;
-      border-radius: 8px;
-      font-size: 1rem;
-      cursor: pointer;
-      outline: none;
-      transition: border-color 0.2s;
+      background: #0f0f0f; border: 1px solid #333; color: #e0e0e0;
+      padding: 12px 16px; border-radius: 8px; font-size: 1rem;
+      cursor: pointer; outline: none; transition: border-color 0.2s;
     }
-
     select:focus { border-color: #f5a623; }
 
-    .toggle-row {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 12px 0;
-    }
-
-    .toggle {
-      position: relative;
-      width: 44px;
-      height: 24px;
-    }
-
+    .toggle-row { display: flex; align-items: center; gap: 12px; padding: 12px 0; }
+    .toggle { position: relative; width: 44px; height: 24px; }
     .toggle input { display: none; }
-
     .toggle-slider {
-      position: absolute;
-      inset: 0;
-      background: #333;
-      border-radius: 24px;
-      cursor: pointer;
-      transition: background 0.2s;
+      position: absolute; inset: 0; background: #333;
+      border-radius: 24px; cursor: pointer; transition: background 0.2s;
     }
-
     .toggle-slider::before {
-      content: '';
-      position: absolute;
-      width: 18px;
-      height: 18px;
-      background: white;
-      border-radius: 50%;
-      top: 3px;
-      left: 3px;
-      transition: transform 0.2s;
+      content: ''; position: absolute; width: 18px; height: 18px;
+      background: white; border-radius: 50%; top: 3px; left: 3px; transition: transform 0.2s;
     }
-
     .toggle input:checked + .toggle-slider { background: #f5a623; }
     .toggle input:checked + .toggle-slider::before { transform: translateX(20px); }
 
     .btn {
-      background: #f5a623;
-      color: #000;
-      border: none;
-      padding: 13px 32px;
-      border-radius: 8px;
-      font-size: 1rem;
-      font-weight: 700;
-      cursor: pointer;
-      transition: background 0.2s, transform 0.1s;
-      white-space: nowrap;
+      background: #f5a623; color: #000; border: none; padding: 13px 32px;
+      border-radius: 8px; font-size: 1rem; font-weight: 700; cursor: pointer;
+      transition: background 0.2s, transform 0.1s; white-space: nowrap;
     }
-
     .btn:hover { background: #e09510; }
     .btn:active { transform: scale(0.97); }
     .btn:disabled { background: #444; color: #666; cursor: not-allowed; }
 
+    .btn-sm {
+      background: #f5a623; color: #000; border: none; padding: 7px 14px;
+      border-radius: 6px; font-size: 0.8rem; font-weight: 700; cursor: pointer;
+      transition: background 0.2s; white-space: nowrap;
+    }
+    .btn-sm:hover { background: #e09510; }
+
+    .btn-ghost {
+      background: transparent; color: #888; border: 1px solid #333;
+      padding: 7px 14px; border-radius: 6px; font-size: 0.8rem;
+      cursor: pointer; transition: all 0.2s; white-space: nowrap;
+    }
+    .btn-ghost:hover { border-color: #f5a623; color: #f5a623; }
+
     #status {
-      display: none;
-      align-items: center;
-      gap: 12px;
-      padding: 16px 20px;
-      background: #111;
-      border: 1px solid #2a2a2a;
-      border-radius: 8px;
-      margin-bottom: 24px;
+      display: none; align-items: center; gap: 12px;
+      padding: 16px 20px; background: #111; border: 1px solid #2a2a2a;
+      border-radius: 8px; margin-bottom: 24px;
     }
 
     .spinner {
-      width: 20px;
-      height: 20px;
-      border: 3px solid #333;
-      border-top-color: #f5a623;
-      border-radius: 50%;
+      width: 20px; height: 20px; border: 3px solid #333;
+      border-top-color: #f5a623; border-radius: 50%;
       animation: spin 0.8s linear infinite;
     }
-
     @keyframes spin { to { transform: rotate(360deg); } }
 
     #resultados { display: none; }
 
-    .stats-row {
-      display: flex;
-      gap: 16px;
-      margin-bottom: 24px;
-      flex-wrap: wrap;
-    }
+    .stats-row { display: flex; gap: 16px; margin-bottom: 24px; flex-wrap: wrap; }
 
     .stat {
-      background: #111;
-      border: 1px solid #2a2a2a;
-      border-radius: 10px;
-      padding: 16px 20px;
-      flex: 1;
-      min-width: 140px;
+      background: #111; border: 1px solid #2a2a2a;
+      border-radius: 10px; padding: 16px 20px; flex: 1; min-width: 140px;
     }
+    .stat .valor { font-size: 1.8rem; font-weight: 700; color: #f5a623; }
+    .stat .etiqueta { font-size: 0.75rem; color: #666; margin-top: 4px; text-transform: uppercase; }
 
-    .stat .valor {
-      font-size: 1.8rem;
-      font-weight: 700;
-      color: #f5a623;
-    }
-
-    .stat .etiqueta {
-      font-size: 0.75rem;
-      color: #666;
-      margin-top: 4px;
-      text-transform: uppercase;
-    }
-
-    /* Layout mapa + lista */
+    /* Layout principal: mapa | lista | chat */
     .contenido-row {
       display: grid;
-      grid-template-columns: 1fr 380px;
-      gap: 20px;
+      grid-template-columns: 1fr 300px 340px;
+      gap: 16px;
       align-items: start;
     }
 
-    @media (max-width: 768px) {
-      .contenido-row { grid-template-columns: 1fr; }
-    }
+    @media (max-width: 900px) { .contenido-row { grid-template-columns: 1fr; } }
 
     #mapa {
-      width: 100%;
-      height: 520px;
-      border-radius: 12px;
-      border: 1px solid #2a2a2a;
-      background: #111;
+      width: 100%; height: 560px; border-radius: 12px;
+      border: 1px solid #2a2a2a; background: #111;
     }
 
     .lista-scroll {
-      max-height: 520px;
-      overflow-y: auto;
-      scrollbar-width: thin;
-      scrollbar-color: #333 #111;
+      max-height: 560px; overflow-y: auto;
+      scrollbar-width: thin; scrollbar-color: #333 #111;
     }
 
     .negocio-card {
-      background: #111;
-      border: 1px solid #2a2a2a;
-      border-radius: 10px;
-      padding: 14px 16px;
-      margin-bottom: 10px;
-      display: flex;
-      gap: 14px;
-      align-items: flex-start;
-      cursor: pointer;
-      transition: border-color 0.2s, background 0.2s;
+      background: #111; border: 1px solid #2a2a2a; border-radius: 10px;
+      padding: 14px 16px; margin-bottom: 10px; display: flex; gap: 14px;
+      align-items: flex-start; cursor: pointer; transition: border-color 0.2s, background 0.2s;
     }
-
     .negocio-card:hover { border-color: #f5a623; background: #1a1500; }
     .negocio-card.activo { border-color: #f5a623; background: #1a1500; }
 
-    .num {
-      font-size: 1.3rem;
-      font-weight: 700;
-      color: #f5a623;
-      min-width: 28px;
-      text-align: center;
-      margin-top: 2px;
-    }
+    .num { font-size: 1.3rem; font-weight: 700; color: #f5a623; min-width: 28px; text-align: center; margin-top: 2px; }
 
-    .negocio-info h3 {
-      font-size: 0.95rem;
-      font-weight: 600;
-      color: #fff;
-      margin-bottom: 3px;
-    }
-
-    .negocio-info .dir {
-      font-size: 0.8rem;
-      color: #666;
-      margin-bottom: 5px;
-    }
-
-    .negocio-info .razon {
-      font-size: 0.8rem;
-      color: #aaa;
-      font-style: italic;
-    }
+    .negocio-info h3 { font-size: 0.95rem; font-weight: 600; color: #fff; margin-bottom: 3px; }
+    .negocio-info .dir { font-size: 0.8rem; color: #666; margin-bottom: 5px; }
+    .negocio-info .razon { font-size: 0.8rem; color: #aaa; font-style: italic; }
 
     .badge {
-      display: inline-block;
-      background: #1f1a0d;
-      color: #f5a623;
-      border: 1px solid #f5a62344;
-      border-radius: 20px;
-      padding: 2px 8px;
-      font-size: 0.65rem;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      margin-bottom: 4px;
+      display: inline-block; background: #1f1a0d; color: #f5a623;
+      border: 1px solid #f5a62344; border-radius: 20px;
+      padding: 2px 8px; font-size: 0.65rem; text-transform: uppercase;
+      letter-spacing: 0.5px; margin-bottom: 4px;
     }
 
+    /* Chat panel */
+    .chat-panel {
+      background: #1a1a1a; border: 1px solid #2a2a2a;
+      border-radius: 12px; display: flex; flex-direction: column;
+      height: 560px; overflow: hidden;
+    }
+
+    .chat-header {
+      padding: 14px 16px; border-bottom: 1px solid #2a2a2a;
+      background: #111;
+    }
+
+    .chat-header .negocio-activo {
+      font-size: 0.85rem; font-weight: 600; color: #fff;
+      margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+
+    .chat-header .chat-subtitle { font-size: 0.75rem; color: #666; }
+
+    .chat-placeholder {
+      flex: 1; display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      gap: 10px; color: #444; padding: 20px; text-align: center;
+    }
+
+    .chat-placeholder .icon { font-size: 2.5rem; }
+    .chat-placeholder p { font-size: 0.85rem; line-height: 1.5; }
+
+    .chat-messages {
+      flex: 1; overflow-y: auto; padding: 14px;
+      display: flex; flex-direction: column; gap: 10px;
+      scrollbar-width: thin; scrollbar-color: #333 #111;
+    }
+
+    .msg {
+      max-width: 90%; padding: 10px 13px;
+      border-radius: 10px; font-size: 0.85rem; line-height: 1.5;
+    }
+
+    .msg.user {
+      background: #f5a623; color: #000; align-self: flex-end;
+      border-bottom-right-radius: 3px; font-weight: 500;
+    }
+
+    .msg.assistant {
+      background: #222; color: #e0e0e0; align-self: flex-start;
+      border-bottom-left-radius: 3px; border: 1px solid #2a2a2a;
+    }
+
+    .msg.typing { background: #222; border: 1px solid #2a2a2a; align-self: flex-start; }
+
+    .typing-dots span {
+      display: inline-block; width: 6px; height: 6px;
+      background: #666; border-radius: 50%; margin: 0 2px;
+      animation: bounce 1.2s infinite;
+    }
+    .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+    .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes bounce { 0%, 60%, 100% { transform: translateY(0); } 30% { transform: translateY(-6px); } }
+
+    /* Quick actions */
+    .quick-actions {
+      padding: 10px 14px; border-top: 1px solid #1e1e1e;
+      display: flex; gap: 6px; flex-wrap: wrap;
+    }
+
+    /* Input area */
+    .chat-input-area {
+      padding: 12px 14px; border-top: 1px solid #2a2a2a;
+      display: flex; gap: 8px; align-items: flex-end;
+    }
+
+    .chat-input {
+      flex: 1; background: #111; border: 1px solid #333; color: #e0e0e0;
+      border-radius: 8px; padding: 9px 12px; font-size: 0.85rem;
+      outline: none; resize: none; font-family: inherit;
+      transition: border-color 0.2s; min-height: 38px; max-height: 100px;
+    }
+    .chat-input:focus { border-color: #f5a623; }
+
+    .btn-send {
+      background: #f5a623; color: #000; border: none;
+      width: 38px; height: 38px; border-radius: 8px;
+      font-size: 1rem; cursor: pointer; transition: background 0.2s;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .btn-send:hover { background: #e09510; }
+    .btn-send:disabled { background: #333; cursor: not-allowed; }
+
     .error-msg {
-      background: #1a0f0f;
-      border: 1px solid #5a1a1a;
-      color: #ff6b6b;
-      padding: 16px 20px;
-      border-radius: 8px;
-      margin-bottom: 16px;
+      background: #1a0f0f; border: 1px solid #5a1a1a;
+      color: #ff6b6b; padding: 16px 20px; border-radius: 8px; margin-bottom: 16px;
     }
   </style>
 </head>
@@ -339,7 +289,44 @@
     <div class="stats-row" id="statsRow"></div>
     <div class="contenido-row">
       <div id="mapa"></div>
+
       <div class="lista-scroll" id="listaNegocios"></div>
+
+      <!-- Chat panel -->
+      <div class="chat-panel" id="chatPanel">
+        <div class="chat-header">
+          <div class="negocio-activo" id="chatNegocioNombre">Asistente</div>
+          <div class="chat-subtitle" id="chatNegocioSub">Seleccioná un negocio para empezar</div>
+        </div>
+
+        <div class="chat-placeholder" id="chatPlaceholder">
+          <div class="icon">💬</div>
+          <p>Seleccioná un negocio del mapa o la lista para consultar al asistente sobre ese lugar.</p>
+        </div>
+
+        <div class="chat-messages" id="chatMessages" style="display:none;"></div>
+
+        <div class="quick-actions" id="quickActions" style="display:none;">
+          <button class="btn-ghost" onclick="quickAction('¿Qué sabés de este negocio?')">🔍 Info</button>
+          <button class="btn-ghost" onclick="quickAction('Generame un mensaje de presentación comercial')">👋 Presentación</button>
+          <button class="btn-ghost" onclick="quickAction('Generame un mensaje de seguimiento post-visita')">📋 Seguimiento</button>
+          <button class="btn-ghost" onclick="quickAction('Generame un mensaje con una oferta o promoción')">🎯 Oferta</button>
+          <button class="btn-ghost" onclick="quickAction('Generame un recordatorio de pedido')">🔔 Recordatorio</button>
+        </div>
+
+        <div class="chat-input-area" id="chatInputArea" style="display:none;">
+          <textarea
+            class="chat-input"
+            id="chatInput"
+            placeholder="Preguntá algo sobre este negocio..."
+            rows="1"
+            onkeydown="handleKey(event)"
+            oninput="autoResize(this)"
+          ></textarea>
+          <button class="btn-send" id="btnSend" onclick="enviarMensaje()">➤</button>
+        </div>
+      </div>
+
     </div>
   </div>
 
@@ -350,34 +337,33 @@
   let markers = [];
   let infoWindows = [];
   let negociosData = [];
+  let negocioActivo = null;
+  let historialChat = [];
 
+  // ─── Barrios ────────────────────────────────────────────────────
   async function cargarBarrios() {
     try {
       const res = await fetch('/barrios');
       const data = await res.json();
       const select = document.getElementById('barrio');
-      select.innerHTML = data.barrios.map(b =>
-        `<option value="${b}">${b}</option>`
-      ).join('');
+      select.innerHTML = data.barrios.map(b => `<option value="${b}">${b}</option>`).join('');
     } catch (e) {
-      document.getElementById('barrio').innerHTML =
-        '<option value="Pocitos">Pocitos</option>';
+      document.getElementById('barrio').innerHTML = '<option value="Pocitos">Pocitos</option>';
     }
   }
 
+  // ─── Roadmap ────────────────────────────────────────────────────
   async function generarRoadmap() {
     const barrio = document.getElementById('barrio').value;
     const whatsapp = document.getElementById('whatsapp').checked;
     const btn = document.getElementById('btnGenerar');
-
     if (!barrio) return;
 
     btn.disabled = true;
     document.getElementById('resultados').style.display = 'none';
     const status = document.getElementById('status');
     status.style.display = 'flex';
-    document.getElementById('statusText').textContent =
-      `Buscando negocios en ${barrio}...`;
+    document.getElementById('statusText').textContent = `Buscando negocios en ${barrio}...`;
 
     try {
       const res = await fetch('/generar-roadmap', {
@@ -385,25 +371,22 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ barrio, enviar_whatsapp: whatsapp })
       });
-
       const data = await res.json();
       status.style.display = 'none';
 
       if (data.error) {
         document.getElementById('resultados').style.display = 'block';
-        document.getElementById('listaNegocios').innerHTML =
-          `<div class="error-msg">⚠️ ${data.error}</div>`;
+        document.getElementById('listaNegocios').innerHTML = `<div class="error-msg">⚠️ ${data.error}</div>`;
         return;
       }
 
       negociosData = data.seleccionados;
+      resetChat();
       mostrarResultados(data);
-
     } catch (e) {
       status.style.display = 'none';
       document.getElementById('resultados').style.display = 'block';
-      document.getElementById('listaNegocios').innerHTML =
-        `<div class="error-msg">❌ Error de conexión con el servidor</div>`;
+      document.getElementById('listaNegocios').innerHTML = `<div class="error-msg">❌ Error de conexión con el servidor</div>`;
     } finally {
       btn.disabled = false;
     }
@@ -426,24 +409,23 @@
       </div>
     `).join('');
 
-    document.getElementById('listaNegocios').innerHTML =
-      data.seleccionados.map((n, i) => `
-        <div class="negocio-card" id="card-${i}" onclick="focusMarker(${i})">
-          <div class="num">${i + 1}</div>
-          <div class="negocio-info">
-            <div class="badge">${n.tipo || 'negocio'}</div>
-            <h3>${n.nombre}</h3>
-            <div class="dir">📍 ${n.direccion}</div>
-            <div class="razon">💡 ${n.razon}</div>
-          </div>
+    document.getElementById('listaNegocios').innerHTML = data.seleccionados.map((n, i) => `
+      <div class="negocio-card" id="card-${i}" onclick="seleccionarNegocio(${i})">
+        <div class="num">${i + 1}</div>
+        <div class="negocio-info">
+          <div class="badge">${n.tipo || 'negocio'}</div>
+          <h3>${n.nombre}</h3>
+          <div class="dir">📍 ${n.direccion}</div>
+          <div class="razon">💡 ${n.razon}</div>
         </div>
-      `).join('');
+      </div>
+    `).join('');
 
     iniciarMapa(data.seleccionados);
   }
 
+  // ─── Mapa ───────────────────────────────────────────────────────
   function iniciarMapa(negocios) {
-    // Limpiar markers anteriores
     markers.forEach(m => m.setMap(null));
     markers = [];
     infoWindows = [];
@@ -452,12 +434,9 @@
 
     if (!mapa) {
       mapa = new google.maps.Map(document.getElementById('mapa'), {
-        zoom: 14,
-        center: centro,
+        zoom: 14, center: centro,
         styles: mapaNocturno(),
-        mapTypeControl: false,
-        streetViewControl: false,
-        fullscreenControl: false,
+        mapTypeControl: false, streetViewControl: false, fullscreenControl: false,
       });
     } else {
       mapa.setCenter(centro);
@@ -471,65 +450,163 @@
       bounds.extend(pos);
 
       const marker = new google.maps.Marker({
-        position: pos,
-        map: mapa,
-        title: n.nombre,
-        label: {
-          text: String(i + 1),
-          color: '#000',
-          fontWeight: 'bold',
-          fontSize: '12px',
-        },
+        position: pos, map: mapa, title: n.nombre,
+        label: { text: String(i + 1), color: '#000', fontWeight: 'bold', fontSize: '12px' },
         icon: {
-          path: google.maps.SymbolPath.CIRCLE,
-          scale: 18,
-          fillColor: '#f5a623',
-          fillOpacity: 1,
-          strokeColor: '#000',
-          strokeWeight: 1.5,
+          path: google.maps.SymbolPath.CIRCLE, scale: 18,
+          fillColor: '#f5a623', fillOpacity: 1, strokeColor: '#000', strokeWeight: 1.5,
         }
       });
 
-      const infoWindow = new google.maps.InfoWindow({
+      const iw = new google.maps.InfoWindow({
         content: `
-          <div style="font-family: Segoe UI, sans-serif; max-width: 220px; padding: 4px;">
-            <strong style="font-size: 14px;">${n.nombre}</strong>
-            <p style="color: #555; font-size: 12px; margin: 4px 0;">${n.direccion}</p>
-            <p style="color: #888; font-size: 11px; font-style: italic;">${n.razon}</p>
-          </div>
-        `
+          <div style="font-family: Segoe UI, sans-serif; max-width: 200px; padding: 4px;">
+            <strong style="font-size: 13px;">${n.nombre}</strong>
+            <p style="color: #555; font-size: 11px; margin: 4px 0;">${n.direccion}</p>
+            <p style="color: #888; font-size: 10px; font-style: italic;">${n.razon}</p>
+          </div>`
       });
 
       marker.addListener('click', () => {
-        infoWindows.forEach(iw => iw.close());
-        infoWindow.open(mapa, marker);
-        destacarCard(i);
+        infoWindows.forEach(w => w.close());
+        iw.open(mapa, marker);
+        seleccionarNegocio(i);
       });
 
       markers.push(marker);
-      infoWindows.push(infoWindow);
+      infoWindows.push(iw);
     });
 
     mapa.fitBounds(bounds);
   }
 
-  function focusMarker(i) {
-    infoWindows.forEach(iw => iw.close());
+  function seleccionarNegocio(i) {
+    // Foco en mapa
+    infoWindows.forEach(w => w.close());
     infoWindows[i].open(mapa, markers[i]);
     mapa.panTo(markers[i].getPosition());
     mapa.setZoom(16);
-    destacarCard(i);
-  }
 
-  function destacarCard(i) {
+    // Destacar card
     document.querySelectorAll('.negocio-card').forEach(c => c.classList.remove('activo'));
     const card = document.getElementById(`card-${i}`);
-    if (card) {
-      card.classList.add('activo');
-      card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    if (card) { card.classList.add('activo'); card.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }
+
+    // Activar chat si cambió el negocio
+    const nuevo = negociosData[i];
+    if (!negocioActivo || negocioActivo.nombre !== nuevo.nombre) {
+      negocioActivo = nuevo;
+      historialChat = [];
+      activarChat(nuevo);
     }
   }
 
+  // ─── Chat ────────────────────────────────────────────────────────
+  function activarChat(negocio) {
+    document.getElementById('chatPlaceholder').style.display = 'none';
+    document.getElementById('chatMessages').style.display = 'flex';
+    document.getElementById('quickActions').style.display = 'flex';
+    document.getElementById('chatInputArea').style.display = 'flex';
+    document.getElementById('chatNegocioNombre').textContent = negocio.nombre;
+    document.getElementById('chatNegocioSub').textContent = negocio.direccion;
+    document.getElementById('chatMessages').innerHTML = '';
+
+    agregarMensaje('assistant', `Hola! Estoy listo para ayudarte con **${negocio.nombre}**. ¿Qué necesitás?`);
+  }
+
+  function resetChat() {
+    negocioActivo = null;
+    historialChat = [];
+    document.getElementById('chatPlaceholder').style.display = 'flex';
+    document.getElementById('chatMessages').style.display = 'none';
+    document.getElementById('quickActions').style.display = 'none';
+    document.getElementById('chatInputArea').style.display = 'none';
+    document.getElementById('chatNegocioNombre').textContent = 'Asistente';
+    document.getElementById('chatNegocioSub').textContent = 'Seleccioná un negocio para empezar';
+  }
+
+  function agregarMensaje(role, texto) {
+    const container = document.getElementById('chatMessages');
+    const div = document.createElement('div');
+    div.className = `msg ${role}`;
+    div.textContent = texto;
+    container.appendChild(div);
+    container.scrollTop = container.scrollHeight;
+    return div;
+  }
+
+  function agregarTyping() {
+    const container = document.getElementById('chatMessages');
+    const div = document.createElement('div');
+    div.className = 'msg typing';
+    div.id = 'typing-indicator';
+    div.innerHTML = '<div class="typing-dots"><span></span><span></span><span></span></div>';
+    container.appendChild(div);
+    container.scrollTop = container.scrollHeight;
+  }
+
+  function quitarTyping() {
+    const el = document.getElementById('typing-indicator');
+    if (el) el.remove();
+  }
+
+  function quickAction(texto) {
+    document.getElementById('chatInput').value = texto;
+    enviarMensaje();
+  }
+
+  function handleKey(e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      enviarMensaje();
+    }
+  }
+
+  function autoResize(el) {
+    el.style.height = 'auto';
+    el.style.height = Math.min(el.scrollHeight, 100) + 'px';
+  }
+
+  async function enviarMensaje() {
+    const input = document.getElementById('chatInput');
+    const texto = input.value.trim();
+    if (!texto || !negocioActivo) return;
+
+    input.value = '';
+    input.style.height = 'auto';
+    document.getElementById('btnSend').disabled = true;
+
+    agregarMensaje('user', texto);
+    historialChat.push({ role: 'user', content: texto });
+    agregarTyping();
+
+    try {
+      const res = await fetch('/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          mensajes: historialChat,
+          negocio: negocioActivo
+        })
+      });
+
+      const data = await res.json();
+      quitarTyping();
+
+      const respuesta = data.respuesta;
+      historialChat.push({ role: 'assistant', content: respuesta });
+      agregarMensaje('assistant', respuesta);
+
+    } catch (e) {
+      quitarTyping();
+      agregarMensaje('assistant', '❌ Error al conectar con el asistente.');
+    } finally {
+      document.getElementById('btnSend').disabled = false;
+      input.focus();
+    }
+  }
+
+  // ─── Mapa nocturno ───────────────────────────────────────────────
   function mapaNocturno() {
     return [
       { elementType: 'geometry', stylers: [{ color: '#1a1a2e' }] },
@@ -547,7 +624,6 @@
   cargarBarrios();
 </script>
 
-<!-- Google Maps -->
 <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDYHfHRh3mcxWFNK8l3CvTldIWMLPiuJMY"></script>
 
 </body>
