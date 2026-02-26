@@ -111,3 +111,24 @@ def resetear_db():
     from database import resetear_db as db_reset
     db_reset()
     return {"ok": True}
+
+@app.post("/migrar-tabla")
+def migrar_tabla():
+    from database import get_conn
+    conn = get_conn()
+    cursor = conn.cursor()
+    cursor.execute("""
+        ALTER TABLE negocios
+        ADD COLUMN IF NOT EXISTS telefono TEXT,
+        ADD COLUMN IF NOT EXISTS email TEXT,
+        ADD COLUMN IF NOT EXISTS horario TEXT,
+        ADD COLUMN IF NOT EXISTS tipo_negocio TEXT,
+        ADD COLUMN IF NOT EXISTS nivel_operativo TEXT,
+        ADD COLUMN IF NOT EXISTS tiene_rotiseria BOOLEAN DEFAULT FALSE,
+        ADD COLUMN IF NOT EXISTS tiene_produccion_propia BOOLEAN DEFAULT FALSE,
+        ADD COLUMN IF NOT EXISTS place_id TEXT
+    """)
+    conn.commit()
+    cursor.close()
+    conn.close()
+    return {"ok": True, "mensaje": "Tabla migrada correctamente"}
