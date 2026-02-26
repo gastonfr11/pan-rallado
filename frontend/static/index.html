@@ -604,7 +604,7 @@
 } 
 
   async function guardarVisita() {
-    const negocioParaVisitar = window.negocioParaVisitar;
+    const negocioParaVisitar = window._negocioParaVisitar;
     if (!negocioParaVisitar) return;
     const payload = {
       nombre: negocioParaVisitar.nombre,
