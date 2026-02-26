@@ -46,10 +46,10 @@ def generar_roadmap(req: RoadmapRequest):
     )
     return resultado
 
-from groq import Groq
+import anthropic
 from typing import List
 
-groq_client = Groq()
+anthropic_client = anthropic.Anthropic()
 
 class Mensaje(BaseModel):
     role: str
@@ -85,12 +85,11 @@ Tipos de mensajes que podés generar:
 - Oferta o promoción
 - Recordatorio de pedido"""
 
-    respuesta = groq_client.chat.completions.create(
-        model="llama-3.3-70b-versatile",
-        messages=[
-            {"role": "system", "content": system_prompt},
-            *[{"role": m.role, "content": m.content} for m in req.mensajes]
-        ]
+    respuesta = anthropic_client.messages.create(
+        model="claude-sonnet-4-20250514",
+        max_tokens=1024,
+        system=system_prompt,
+        messages=[{"role": m.role, "content": m.content} for m in req.mensajes]
     )
 
-    return {"respuesta": respuesta.choices[0].message.content}
+    return {"respuesta": respuesta.content[0].text}

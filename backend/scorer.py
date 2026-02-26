@@ -1,10 +1,11 @@
 # backend/scorer.py
-from groq import Groq
+import anthropic
 from dotenv import load_dotenv
 import json
 
 load_dotenv(override=True)
-client = Groq()
+
+client = anthropic.Anthropic()
 
 PROMPT_CHICO = """
 Sos un asistente comercial de una distribuidora de pan rallado en Uruguay.
@@ -58,12 +59,14 @@ El campo "numero" debe ser el número que aparece al inicio de cada línea de la
 Seleccioná exactamente 10 negocios. Si hay menos de 10, seleccioná todos los que haya.
 """
 
-    response = client.chat.completions.create(
-        model="llama-3.3-70b-versatile",
+    response = client.messages.create(
+        model="claude-sonnet-4-20250514",
+        max_tokens=1024,
         messages=[{"role": "user", "content": prompt}]
     )
 
-    contenido = response.choices[0].message.content.strip()
+    contenido = response.content[0].text.strip()
+
     if contenido.startswith("```"):
         contenido = contenido.split("```")[1]
         if contenido.startswith("json"):
@@ -71,8 +74,8 @@ Seleccioná exactamente 10 negocios. Si hay menos de 10, seleccioná todos los q
     contenido = contenido.strip()
 
     resultado = json.loads(contenido)
-
     seleccionados = []
+
     for item in resultado["seleccionados"]:
         indice = item["numero"] - 1
         if 0 <= indice < len(negocios):
