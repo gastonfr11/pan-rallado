@@ -1124,17 +1124,17 @@
     }
   });
 
-  const waypoints = negocios.slice(0, -1).map(n => ({
-    location: { lat: n.lat, lng: n.lng },
-    stopover: true
-  }));
+  const waypoints = negocios.map(n => ({
+  location: { lat: n.lat, lng: n.lng },
+  stopover: true
+}));
 
-  directionsService.route({
-    origin: distribuidora,
-    destination: distribuidora,
-    waypoints: waypoints,
-    optimizeWaypoints: false, // ya está optimizado desde el backend
-    travelMode: google.maps.TravelMode.DRIVING,
+directionsService.route({
+  origin: distribuidora,
+  destination: distribuidora,
+  waypoints: waypoints,
+  optimizeWaypoints: false,
+  travelMode: google.maps.TravelMode.DRIVING,
   }, (result, status) => {
     if (status === 'OK') {
       directionsRenderer.setDirections(result);
