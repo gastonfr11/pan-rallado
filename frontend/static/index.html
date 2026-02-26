@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Pan Rallado">
+  <meta name="theme-color" content="#0a0a0a">
+  <title>Pan Rallado</title>
+  <link rel="manifest" href="/static/manifest.json">
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/base.css">
+  <link rel="stylesheet" href="/static/css/components.css">
+</head>
+<body>
+<div id="app">
+
+  <!-- HEADER -->
+  <div id="header">
+    <div class="logo-icon">🥖</div>
+    <div>
+      <div class="logo-text">PAN RALLADO</div>
+      <div class="tagline">AGENTE DE VENTAS · MONTEVIDEO</div>
+    </div>
+    <div class="status-dot"></div>
+  </div>
+
+  <!-- CONTENT -->
+  <div id="content">
+    <div id="loadingOverlay">
+      <div class="spinner-ring"></div>
+      <div id="loadingText">Buscando negocios...</div>
+    </div>
+
+    <!-- ① GENERAR -->
+    <div class="screen active" id="generarScreen">
+      <div class="card">
+        <div class="card-title">📍 Zona del día</div>
+        <div style="display:flex;flex-direction:column;gap:12px;">
+          <div class="field">
+            <label>Barrio</label>
+            <div class="select-wrapper">
+              <select id="barrio"><option value="">Cargando...</option></select>
+            </div>
+          </div>
+          <div class="field">
+            <label>Tipo de cliente</label>
+            <div class="select-wrapper">
+              <select id="modo">
+                <option value="chico">🏪 Clientes chicos</option>
+                <option value="grande">🏭 Clientes grandes</option>
+              </select>
+            </div>
+          </div>
+          <div class="toggle-row">
+            <span class="toggle-label">📲 Enviar por WhatsApp</span>
+            <label class="toggle">
+              <input type="checkbox" id="whatsapp">
+              <div class="toggle-track"></div>
+              <div class="toggle-thumb"></div>
+            </label>
+          </div>
+          <button class="btn-primary" id="btnGenerar" onclick="generarRoadmap()">⚡ GENERAR ROADMAP</button>
+        </div>
+      </div>
+      <div id="statsContainer" style="display:none;">
+        <div class="stats-row" id="statsRow"></div>
+      </div>
+      <div class="empty-state" id="emptyState">
+        <div class="empty-state-icon">🗺️</div>
+        <h3>Sin resultados aún</h3>
+        <p>Elegí un barrio y generá el roadmap del día.</p>
+      </div>
+    </div>
+
+    <!-- ② LISTA -->
+    <div class="screen" id="listaScreen">
+      <div class="empty-state" id="listaEmpty">
+        <div class="empty-state-icon">📋</div>
+        <h3>Sin negocios todavía</h3>
+        <p>Generá un roadmap primero.</p>
+      </div>
+      <div id="listaNegociosContainer" style="display:none;"></div>
+    </div>
+
+    <!-- ③ MAPA -->
+    <div class="screen" id="mapaScreen">
+      <div class="map-container">
+        <div id="mapa"></div>
+        <div class="empty-state" id="mapaEmpty" style="position:absolute;inset:0;background:var(--bg);">
+          <div class="empty-state-icon">🗺️</div>
+          <h3>Sin mapa todavía</h3>
+          <p>Generá un roadmap para ver la ruta.</p>
+        </div>
+      </div>
+      <div class="map-bottom" id="mapChips" style="display:none;"></div>
+    </div>
+
+    <!-- ④ CHAT -->
+    <div class="screen" id="chatScreen">
+      <div class="chat-selector" id="chatSelector" style="display:none;">
+        <div class="chat-selector-label">Negocio activo</div>
+        <div class="chat-chips" id="chatChips"></div>
+      </div>
+      <div class="chat-empty" id="chatEmpty">
+        <div class="chat-empty-icon">💬</div>
+        <p>Generá un roadmap y seleccioná un negocio para chatear.</p>
+      </div>
+      <div class="chat-messages-area" id="chatMessages" style="display:none;"></div>
+      <div class="quick-actions-bar" id="quickActionsBar" style="display:none;">
+        <button class="quick-btn" onclick="quickAction('¿Qué sabés de este negocio?')">🔍 Info</button>
+        <button class="quick-btn" onclick="quickAction('Generame un mensaje de presentación comercial')">👋 Presentación</button>
+        <button class="quick-btn" onclick="quickAction('Generame un mensaje de seguimiento post-visita')">📋 Seguimiento</button>
+        <button class="quick-btn" onclick="quickAction('Generame un mensaje con una oferta')">🎯 Oferta</button>
+        <button class="quick-btn" onclick="quickAction('Generame un recordatorio de pedido')">🔔 Recordatorio</button>
+      </div>
+      <div class="chat-input-bar" id="chatInputBar" style="display:none;">
+        <textarea id="chatInput" placeholder="Preguntá sobre este negocio..." rows="1"
+          onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+        <button class="btn-send" id="btnSend" onclick="enviarMensaje()">➤</button>
+      </div>
+    </div>
+
+    <!-- ⑤ DASHBOARD -->
+    <div class="screen" id="dashboardScreen">
+      <div class="card">
+        <div class="card-title">📊 Negocios Visitados</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <div class="select-wrapper" style="flex:1;min-width:140px;">
+            <select id="filtroBarrio" onchange="cargarDashboard()">
+              <option value="">Todos los barrios</option>
+            </select>
+          </div>
+          <div class="select-wrapper" style="flex:1;min-width:140px;">
+            <select id="filtroEstado" onchange="cargarDashboard()">
+              <option value="">Todos los estados</option>
+              <option value="visitado">Visitado</option>
+              <option value="interesado">Interesado</option>
+              <option value="cliente">Cliente</option>
+              <option value="no_interesado">No interesado</option>
+            </select>
+          </div>
+        </div>
+        <div style="margin-top:10px;">
+          <input type="text" id="filtroBusqueda" placeholder="🔍 Buscar por nombre..." oninput="cargarDashboard()">
+        </div>
+      </div>
+      <div class="stats-row" id="dashboardStats"></div>
+      <div id="dashboardLista" style="display:flex;flex-direction:column;gap:10px;"></div>
+    </div>
+
+  </div>
+
+  <!-- NAV -->
+  <nav id="nav">
+    <button class="nav-btn active" onclick="goTo('generar',this)"><div class="nav-icon">⚡</div><div class="nav-label">Generar</div></button>
+    <button class="nav-btn" onclick="goTo('lista',this)"><div class="nav-icon">📋</div><div class="nav-label">Lista</div></button>
+    <button class="nav-btn" onclick="goTo('mapa',this)"><div class="nav-icon">🗺️</div><div class="nav-label">Mapa</div></button>
+    <button class="nav-btn" onclick="goTo('chat',this)"><div class="nav-icon">💬</div><div class="nav-label">Chat</div></button>
+    <button class="nav-btn" onclick="goTo('dashboard',this)"><div class="nav-icon">📊</div><div class="nav-label">Dashboard</div></button>
+  </nav>
+</div>
+
+<!-- MODAL VISITADO -->
+<div id="modalVisitado">
+  <div class="modal-content">
+    <div class="modal-title">✅ Registrar Visita</div>
+    <div class="modal-negocio-nombre" id="modalNombre"></div>
+    <div class="modal-field">
+      <label>Estado</label>
+      <div class="select-wrapper">
+        <select id="modalEstado">
+          <option value="visitado">Visitado</option>
+          <option value="interesado">Interesado</option>
+          <option value="cliente">Cliente</option>
+          <option value="no_interesado">No interesado</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-row">
+      <div class="modal-field">
+        <label>Teléfono <span class="auto-badge">AUTO</span></label>
+        <input type="text" id="modalTelefono" placeholder="Sin datos">
+      </div>
+      <div class="modal-field">
+        <label>Email</label>
+        <input type="text" id="modalEmail" placeholder="email@negocio.com">
+      </div>
+    </div>
+    <div class="modal-field">
+      <label>Horario <span class="auto-badge">AUTO</span></label>
+      <input type="text" id="modalHorario" placeholder="Sin datos">
+    </div>
+    <div class="modal-row">
+      <div class="modal-field">
+        <label>Tipo de negocio</label>
+        <input type="text" id="modalTipoNegocio" placeholder="Rotisería, Carnicería...">
+      </div>
+      <div class="modal-field">
+        <label>Nivel operativo</label>
+        <div class="select-wrapper">
+          <select id="modalNivel">
+            <option value="">Sin definir</option>
+            <option value="minorista">Minorista</option>
+            <option value="comercial_medio">Comercial medio</option>
+            <option value="elaboracion_fuerte">Elaboración fuerte</option>
+            <option value="industrial">Industrial</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="toggle-field">
+      <label>¿Tiene rotisería propia?</label>
+      <label class="toggle">
+        <input type="checkbox" id="modalRotiseria">
+        <div class="toggle-track"></div>
+        <div class="toggle-thumb"></div>
+      </label>
+    </div>
+    <div class="toggle-field">
+      <label>¿Tiene producción propia?</label>
+      <label class="toggle">
+        <input type="checkbox" id="modalProduccion">
+        <div class="toggle-track"></div>
+        <div class="toggle-thumb"></div>
+      </label>
+    </div>
+    <div class="modal-field">
+      <label>Notas</label>
+      <textarea id="modalNotas" placeholder="Observaciones de la visita..."></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-modal-cancel" onclick="cerrarModal()">CANCELAR</button>
+      <button class="btn-modal-save" onclick="guardarVisita()">GUARDAR</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<!-- JS modules — order matters -->
+<script src="/static/js/state.js"></script>
+<script src="/static/js/utils.js"></script>
+<script src="/static/js/navigation.js"></script>
+<script src="/static/js/mapa.js"></script>
+<script src="/static/js/chat.js"></script>
+<script src="/static/js/visitado.js"></script>
+<script src="/static/js/dashboard.js"></script>
+<script src="/static/js/roadmap.js"></script>
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDYHfHRh3mcxWFNK8l3CvTldIWMLPiuJMY"></script>
+<script>
+  // Init
+  cargarBarrios();
+</script>
+</body>
+</html>

@@ -1,0 +1,7 @@
+venv/
+.env
+__pycache__/
+*.pyc
+test_claude.py
+test_groq.py
+test_places.py
