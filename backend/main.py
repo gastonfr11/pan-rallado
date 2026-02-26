@@ -85,7 +85,7 @@ def buscar_negocios(barrio: str, modo: str = "chico") -> list:
             language="es"
         )
         for lugar in resultado["results"]:
-            if lugar["name"] not in vistos and es_direccion_valida(lugar):
+            if lugar["name"] not in vistos and es_direccion_valida(lugar) and esta_en_barrio(lugar, info):
                 if not fue_visitado_recientemente(lugar["name"], lugar.get("formatted_address", "")):
                     vistos.add(lugar["name"])
                     lugar["_modo"] = modo
@@ -131,3 +131,20 @@ if __name__ == "__main__":
         print(f"   📍 {n['direccion']}")
         print(f"   💡 {n['razon']}")
         print()
+
+import math
+
+def distancia_km(lat1, lng1, lat2, lng2):
+    R = 6371
+    dlat = math.radians(lat2 - lat1)
+    dlng = math.radians(lng2 - lng1)
+    a = math.sin(dlat/2)**2 + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.sin(dlng/2)**2
+    return R * 2 * math.atan2(math.sqrt(a), math.sqrt(1-a))
+
+def esta_en_barrio(lugar: dict, info: dict) -> bool:
+    try:
+        lat = lugar["geometry"]["location"]["lat"]
+        lng = lugar["geometry"]["location"]["lng"]
+        return distancia_km(lat, lng, info["lat"], info["lng"]) <= (info["radio"] / 1000) * 1.2
+    except:
+        return True
