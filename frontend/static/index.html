@@ -447,6 +447,24 @@
 
     .btn-chat-quick:active { background: rgba(245,166,35,0.25); }
 
+    .btn-visitado {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text-mid);
+      padding: 7px 12px;
+      border-radius: 8px;
+      font-size: 0.75rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .btn-visitado:active { background: rgba(77,255,145,0.15); border-color: #4dff91; color: #4dff91; }
+    .btn-visitado.marcado { background: rgba(77,255,145,0.1); border-color: #4dff91; color: #4dff91; cursor: default; }
+
     /* ── MAPA ───────────────────────────────────────────── */
     #mapa {
       width: 100%;
@@ -1011,6 +1029,9 @@
             <button class="btn-chat-quick" onclick="event.stopPropagation(); abrirChatNegocio(${i})">
               💬 Chat
             </button>
+            <button class="btn-visitado" id="visitado-${i}" onclick="event.stopPropagation(); marcarVisitado(${i})">
+              ✅ Visitado
+            </button>
           </div>
         </div>
       </div>
@@ -1299,6 +1320,33 @@ directionsService.route({
   }
 
   cargarBarrios();
+
+  async function marcarVisitado(i) {
+    const negocio = negociosData[i];
+    const btn = document.getElementById(`visitado-${i}`);
+    if (!negocio || btn.classList.contains('marcado')) return;
+
+    try {
+      const res = await fetch('/marcar-visitado', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          nombre: negocio.nombre,
+          direccion: negocio.direccion,
+          resultado: 'visitado'
+        })
+      });
+
+      if (res.ok) {
+        btn.classList.add('marcado');
+        btn.textContent = '✅ Visitado';
+        btn.disabled = true;
+        showToast(`✅ ${negocio.nombre} marcado como visitado`);
+      }
+    } catch (e) {
+      showToast('❌ Error al marcar como visitado');
+    }
+  }
 </script>
 
 <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDYHfHRh3mcxWFNK8l3CvTldIWMLPiuJMY"></script>
