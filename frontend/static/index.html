@@ -684,12 +684,17 @@
             ${n.horario?`<div class="dashboard-detalle" style="grid-column:1/-1;"><div class="dashboard-detalle-label">Horario</div><div class="dashboard-detalle-valor">${n.horario}</div></div>`:''}
             ${n.notas?`<div class="dashboard-detalle" style="grid-column:1/-1;"><div class="dashboard-detalle-label">Notas</div><div class="dashboard-detalle-valor">${n.notas}</div></div>`:''}
           </div>
-          <select class="dashboard-select-estado" onchange="actualizarEstado('${nombreEsc}','${dirEsc}',this.value)">
-            <option value="visitado" ${n.resultado==='visitado'?'selected':''}>Visitado</option>
-            <option value="interesado" ${n.resultado==='interesado'?'selected':''}>Interesado</option>
-            <option value="cliente" ${n.resultado==='cliente'?'selected':''}>Cliente</option>
-            <option value="no_interesado" ${n.resultado==='no_interesado'?'selected':''}>No interesado</option>
-          </select>
+          <div style="display:flex;gap:8px;margin-top:10px;">
+            <select class="dashboard-select-estado" style="flex:1;" onchange="actualizarEstado('${nombreEsc}','${dirEsc}',this.value)">
+              <option value="visitado" ${n.resultado==='visitado'?'selected':''}>Visitado</option>
+              <option value="interesado" ${n.resultado==='interesado'?'selected':''}>Interesado</option>
+              <option value="cliente" ${n.resultado==='cliente'?'selected':''}>Cliente</option>
+              <option value="no_interesado" ${n.resultado==='no_interesado'?'selected':''}>No interesado</option>
+            </select>
+            <button onclick="editarVisitado(${n.id})" style="background:var(--surface2);border:1px solid var(--border);color:var(--text-mid);padding:9px 14px;border-radius:10px;font-size:0.8rem;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;">
+              ✏️ Editar
+            </button>
+          </div>
         </div>`;
       }).join('');
     } catch(e) {
@@ -724,6 +729,31 @@
   }
 
   cargarBarrios();
+
+  async function editarVisitado(id) {
+    try {
+      const res = await fetch('/historial');
+      const data = await res.json();
+      const n = data.negocios.find(x => x.id === id);
+      if (!n) return;
+
+      // Reusar el modal con datos precargados
+      window._negocioParaVisitar = { nombre: n.nombre, direccion: n.direccion, index: null };
+      document.getElementById('modalNombre').textContent = n.nombre;
+      document.getElementById('modalEstado').value = n.resultado || 'visitado';
+      document.getElementById('modalTelefono').value = n.telefono || '';
+      document.getElementById('modalEmail').value = n.email || '';
+      document.getElementById('modalHorario').value = n.horario || '';
+      document.getElementById('modalTipoNegocio').value = n.tipo_negocio || '';
+      document.getElementById('modalNivel').value = n.nivel_operativo || '';
+      document.getElementById('modalRotiseria').checked = n.tiene_rotiseria || false;
+      document.getElementById('modalProduccion').checked = n.tiene_produccion_propia || false;
+      document.getElementById('modalNotas').value = n.notas || '';
+      document.getElementById('modalVisitado').classList.add('show');
+    } catch(e) {
+      showToast('❌ Error al cargar datos');
+    }
+  }
 </script>
 <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDYHfHRh3mcxWFNK8l3CvTldIWMLPiuJMY"></script>
 </body>
