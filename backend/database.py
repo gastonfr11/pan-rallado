@@ -63,22 +63,34 @@ def marcar_visitado(nombre: str, direccion: str, resultado: str = "visitado", no
     conn = get_conn()
     cursor = conn.cursor()
     ahora = datetime.now()
-    cursor.execute("""
-        UPDATE negocios
-        SET visitado = TRUE,
-            fecha_ultima_visita = %s,
-            resultado = %s,
-            notas = %s,
-            telefono = %s,
-            email = %s,
-            horario = %s,
-            tipo_negocio = %s,
-            nivel_operativo = %s,
-            tiene_rotiseria = %s,
-            tiene_produccion_propia = %s
+
+    # Construir update dinámico — solo pisa campos que vienen con valor
+    fields = ["visitado = TRUE", "fecha_ultima_visita = %s", "resultado = %s"]
+    values = [ahora, resultado]
+
+    if notas:
+        fields.append("notas = %s"); values.append(notas)
+    if telefono is not None:
+        fields.append("telefono = %s"); values.append(telefono)
+    if email is not None:
+        fields.append("email = %s"); values.append(email)
+    if horario is not None:
+        fields.append("horario = %s"); values.append(horario)
+    if tipo_negocio is not None:
+        fields.append("tipo_negocio = %s"); values.append(tipo_negocio)
+    if nivel_operativo is not None:
+        fields.append("nivel_operativo = %s"); values.append(nivel_operativo)
+    if tiene_rotiseria:
+        fields.append("tiene_rotiseria = %s"); values.append(tiene_rotiseria)
+    if tiene_produccion_propia:
+        fields.append("tiene_produccion_propia = %s"); values.append(tiene_produccion_propia)
+
+    values.extend([nombre, direccion])
+    cursor.execute(f"""
+        UPDATE negocios SET {', '.join(fields)}
         WHERE nombre = %s AND direccion = %s
-    """, (ahora, resultado, notas, telefono, email, horario, tipo_negocio,
-          nivel_operativo, tiene_rotiseria, tiene_produccion_propia, nombre, direccion))
+    """, values)
+
     conn.commit()
     cursor.close()
     conn.close()
