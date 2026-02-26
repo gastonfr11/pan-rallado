@@ -158,7 +158,7 @@ def buscar_negocios(barrio: str, modo: str = "chico") -> list:
         )
         for lugar in resultado["results"]:
             if lugar["name"] not in vistos and es_direccion_valida(lugar) and esta_en_barrio(lugar, info):
-                if not fue_visitado_recientemente(lugar["name"], lugar.get("formatted_address", "")):
+                if not fue_visitado(lugar["name"], lugar.get("formatted_address", "")):
                     vistos.add(lugar["name"])
                     lugar["_modo"] = modo
                     todos.append(lugar)
