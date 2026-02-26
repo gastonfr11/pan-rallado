@@ -112,7 +112,7 @@ def resetear_db():
     db_reset()
     return {"ok": True}
 
-@app.post("/migrar-tabla")
+@app.get("/migrar-tabla")
 def migrar_tabla():
     from database import get_conn
     conn = get_conn()
