@@ -1,74 +1,117 @@
-import sqlite3
+# backend/database.py
+import os
+import psycopg2
+from psycopg2.extras import RealDictCursor
 from datetime import datetime
+from dotenv import load_dotenv
 
-DB_PATH = "visitas.db"
+load_dotenv(override=True)
+
+DATABASE_URL = os.getenv("DATABASE_URL")
+
+def get_conn():
+    return psycopg2.connect(DATABASE_URL)
 
 def init_db():
-    conn = sqlite3.connect(DB_PATH)
+    conn = get_conn()
     cursor = conn.cursor()
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS negocios (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            id SERIAL PRIMARY KEY,
             nombre TEXT NOT NULL,
             direccion TEXT NOT NULL,
             barrio TEXT,
             tipo TEXT,
-            fecha_primera_visita TEXT,
-            fecha_ultima_visita TEXT,
-            resultado TEXT,  -- interesado, no_interesado, cliente, sin_respuesta
+            fecha_primera_visita TIMESTAMP,
+            fecha_ultima_visita TIMESTAMP,
+            visitado BOOLEAN DEFAULT FALSE,
+            resultado TEXT DEFAULT 'sin_respuesta',
             notas TEXT
         )
     """)
     conn.commit()
+    cursor.close()
     conn.close()
 
-def registrar_visita(nombre: str, direccion: str, barrio: str, resultado: str = "sin_respuesta", notas: str = ""):
-    conn = sqlite3.connect(DB_PATH)
+def registrar_negocio(nombre: str, direccion: str, barrio: str, tipo: str = None):
+    """Registra un negocio como mostrado pero NO visitado todavía."""
+    conn = get_conn()
     cursor = conn.cursor()
-    
-    # Verificar si el negocio ya existe
-    cursor.execute("SELECT id, fecha_primera_visita FROM negocios WHERE nombre = ? AND direccion = ?", (nombre, direccion))
+
+    cursor.execute(
+        "SELECT id FROM negocios WHERE nombre = %s AND direccion = %s",
+        (nombre, direccion)
+    )
     existente = cursor.fetchone()
-    
-    ahora = datetime.now().strftime("%Y-%m-%d %H:%M")
-    
-    if existente:
+
+    ahora = datetime.now()
+
+    if not existente:
         cursor.execute("""
-            UPDATE negocios SET fecha_ultima_visita = ?, resultado = ?, notas = ?
-            WHERE id = ?
-        """, (ahora, resultado, notas, existente[0]))
-    else:
-        cursor.execute("""
-            INSERT INTO negocios (nombre, direccion, barrio, fecha_primera_visita, fecha_ultima_visita, resultado, notas)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-        """, (nombre, direccion, barrio, ahora, ahora, resultado, notas))
-    
+            INSERT INTO negocios (nombre, direccion, barrio, tipo, fecha_primera_visita, fecha_ultima_visita, visitado)
+            VALUES (%s, %s, %s, %s, %s, %s, FALSE)
+        """, (nombre, direccion, barrio, tipo, ahora, ahora))
+
     conn.commit()
+    cursor.close()
     conn.close()
 
-def fue_visitado_recientemente(nombre: str, direccion: str, dias: int = 30) -> bool:
-    conn = sqlite3.connect(DB_PATH)
+def marcar_visitado(nombre: str, direccion: str, resultado: str = "sin_respuesta", notas: str = ""):
+    """Marca un negocio como visitado — solo se llama cuando el vendedor lo confirma."""
+    conn = get_conn()
     cursor = conn.cursor()
-    cursor.execute("SELECT fecha_ultima_visita FROM negocios WHERE nombre = ? AND direccion = ?", (nombre, direccion))
-    row = cursor.fetchone()
+
+    ahora = datetime.now()
+
+    cursor.execute("""
+        UPDATE negocios
+        SET visitado = TRUE, fecha_ultima_visita = %s, resultado = %s, notas = %s
+        WHERE nombre = %s AND direccion = %s
+    """, (ahora, resultado, notas, nombre, direccion))
+
+    conn.commit()
+    cursor.close()
     conn.close()
-    
+
+def fue_visitado(nombre: str, direccion: str) -> bool:
+    """Devuelve True solo si el vendedor marcó el negocio como visitado."""
+    conn = get_conn()
+    cursor = conn.cursor()
+
+    cursor.execute(
+        "SELECT visitado FROM negocios WHERE nombre = %s AND direccion = %s",
+        (nombre, direccion)
+    )
+    row = cursor.fetchone()
+    cursor.close()
+    conn.close()
+
     if not row:
         return False
-    
-    ultima = datetime.strptime(row[0], "%Y-%m-%d %H:%M")
-    diferencia = (datetime.now() - ultima).days
-    return diferencia < dias
+    return row[0] is True
 
 def obtener_historial(barrio: str = None) -> list:
-    conn = sqlite3.connect(DB_PATH)
-    cursor = conn.cursor()
-    
+    conn = get_conn()
+    cursor = conn.cursor(cursor_factory=RealDictCursor)
+
     if barrio:
-        cursor.execute("SELECT * FROM negocios WHERE barrio = ? ORDER BY fecha_ultima_visita DESC", (barrio,))
+        cursor.execute(
+            "SELECT * FROM negocios WHERE barrio = %s ORDER BY fecha_ultima_visita DESC",
+            (barrio,)
+        )
     else:
         cursor.execute("SELECT * FROM negocios ORDER BY fecha_ultima_visita DESC")
-    
+
     rows = cursor.fetchall()
+    cursor.close()
     conn.close()
-    return rows
+    return [dict(r) for r in rows]
+
+def resetear_db():
+    """Borra todos los registros de la base de datos."""
+    conn = get_conn()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM negocios")
+    conn.commit()
+    cursor.close()
+    conn.close()

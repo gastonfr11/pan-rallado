@@ -3,7 +3,7 @@ import googlemaps
 import os
 from dotenv import load_dotenv
 from scorer import score_negocios
-from database import init_db, fue_visitado_recientemente, registrar_visita
+from database import init_db, fue_visitado, registrar_negocio
 from router import optimizar_ruta
 from notifier import enviar_roadmap_whatsapp
 
@@ -127,7 +127,7 @@ def buscar_negocios(barrio: str, modo: str = "chico") -> list:
             )
             for lugar in resultado["results"]:
                 if lugar["name"] not in vistos and es_direccion_valida(lugar):
-                    if not fue_visitado_recientemente(lugar["name"], lugar.get("formatted_address", "")):
+                    if not fue_visitado(lugar["name"], lugar.get("formatted_address", "")):
                         vistos.add(lugar["name"])
                         lugar["_modo"] = modo
                         todos.append(lugar)
@@ -179,7 +179,7 @@ def generar_roadmap(barrio: str, enviar_whatsapp: bool = False, modo: str = "chi
         seleccionados, distancia_km, tiempo_min = optimizar_ruta(seleccionados)
 
     for n in seleccionados:
-        registrar_visita(n["nombre"], n["direccion"], barrio)
+        registrar_negocio(n["nombre"], n["direccion"], barrio, n.get("tipo"))
 
     if enviar_whatsapp:
         enviar_roadmap_whatsapp(barrio, seleccionados, distancia_km, tiempo_min)

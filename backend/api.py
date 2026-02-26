@@ -93,3 +93,21 @@ Tipos de mensajes que podés generar:
     )
 
     return {"respuesta": respuesta.content[0].text}
+
+class MarcarVisitadoRequest(BaseModel):
+    nombre: str
+    direccion: str
+    resultado: str = "sin_respuesta"
+    notas: str = ""
+
+@app.post("/marcar-visitado")
+def marcar_visitado(req: MarcarVisitadoRequest):
+    from database import marcar_visitado as db_marcar
+    db_marcar(req.nombre, req.direccion, req.resultado, req.notas)
+    return {"ok": True}
+
+@app.post("/resetear-db")
+def resetear_db():
+    from database import resetear_db as db_reset
+    db_reset()
+    return {"ok": True}
