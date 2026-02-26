@@ -94,18 +94,28 @@ Tipos de mensajes que podés generar:
 
     return {"respuesta": respuesta.content[0].text}
 
+from typing import Optional
+from pydantic import BaseModel, field_validator
+
 class MarcarVisitadoRequest(BaseModel):
     nombre: str
     direccion: str
     resultado: str = "visitado"
     notas: str = ""
-    telefono: str = None
-    email: str = None
-    horario: str = None
-    tipo_negocio: str = None
-    nivel_operativo: str = None
+    telefono: Optional[str] = None
+    email: Optional[str] = None
+    horario: Optional[str] = None
+    tipo_negocio: Optional[str] = None
+    nivel_operativo: Optional[str] = None
     tiene_rotiseria: bool = False
     tiene_produccion_propia: bool = False
+
+    @field_validator('telefono', 'email', 'horario', 'tipo_negocio', 'nivel_operativo', mode='before')
+    @classmethod
+    def empty_str_to_none(cls, v):
+        if v == '':
+            return None
+        return v
 
 @app.post("/marcar-visitado")
 def marcar_visitado_endpoint(req: MarcarVisitadoRequest):
