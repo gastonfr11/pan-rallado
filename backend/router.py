@@ -6,7 +6,7 @@ load_dotenv(override=True)
 
 gmaps = googlemaps.Client(key=os.getenv("GOOGLE_MAPS_API_KEY"))
 
-def optimizar_ruta(negocios: list, origen: str = "Pocitos, Montevideo") -> list:
+def optimizar_ruta(negocios: list, origen: str = "Tomás Gomensoro 3027, Montevideo, Uruguay") -> list:
     if len(negocios) <= 1:
         return negocios
 

@@ -26,7 +26,7 @@ BARRIOS = {
     "Buceo":                {"lat": -34.8980, "lng": -56.1350, "radio": 1000},
     "Malvín":               {"lat": -34.8900, "lng": -56.1150, "radio": 1200},
     "Carrasco":             {"lat": -34.8720, "lng": -56.0650, "radio": 1500},
-    "Ciudad Vieja":     {"lat": -34.9050, "lng": -56.2100, "radio": 800},
+    "Ciudad Vieja":         {"lat": -34.9050, "lng": -56.2100, "radio": 800},
     "Sayago":               {"lat": -34.8750, "lng": -56.2200, "radio": 1200},
     "Tres Cruces":          {"lat": -34.8960, "lng": -56.1650, "radio": 800},
     "La Blanqueada":        {"lat": -34.8900, "lng": -56.1750, "radio": 900},
