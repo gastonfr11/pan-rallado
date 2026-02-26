@@ -97,14 +97,30 @@ Tipos de mensajes que podés generar:
 class MarcarVisitadoRequest(BaseModel):
     nombre: str
     direccion: str
-    resultado: str = "sin_respuesta"
+    resultado: str = "visitado"
     notas: str = ""
+    telefono: str = None
+    email: str = None
+    horario: str = None
+    tipo_negocio: str = None
+    nivel_operativo: str = None
+    tiene_rotiseria: bool = False
+    tiene_produccion_propia: bool = False
 
 @app.post("/marcar-visitado")
-def marcar_visitado(req: MarcarVisitadoRequest):
+def marcar_visitado_endpoint(req: MarcarVisitadoRequest):
     from database import marcar_visitado as db_marcar
-    db_marcar(req.nombre, req.direccion, req.resultado, req.notas)
+    db_marcar(
+        req.nombre, req.direccion, req.resultado, req.notas,
+        req.telefono, req.email, req.horario, req.tipo_negocio,
+        req.nivel_operativo, req.tiene_rotiseria, req.tiene_produccion_propia
+    )
     return {"ok": True}
+
+@app.get("/historial")
+def get_historial(barrio: str = None):
+    from database import obtener_historial
+    return {"negocios": obtener_historial(barrio)}
 
 @app.post("/resetear-db")
 def resetear_db():
@@ -112,23 +128,32 @@ def resetear_db():
     db_reset()
     return {"ok": True}
 
-@app.get("/migrar-tabla")
-def migrar_tabla():
-    from database import get_conn
-    conn = get_conn()
-    cursor = conn.cursor()
-    cursor.execute("""
-        ALTER TABLE negocios
-        ADD COLUMN IF NOT EXISTS telefono TEXT,
-        ADD COLUMN IF NOT EXISTS email TEXT,
-        ADD COLUMN IF NOT EXISTS horario TEXT,
-        ADD COLUMN IF NOT EXISTS tipo_negocio TEXT,
-        ADD COLUMN IF NOT EXISTS nivel_operativo TEXT,
-        ADD COLUMN IF NOT EXISTS tiene_rotiseria BOOLEAN DEFAULT FALSE,
-        ADD COLUMN IF NOT EXISTS tiene_produccion_propia BOOLEAN DEFAULT FALSE,
-        ADD COLUMN IF NOT EXISTS place_id TEXT
-    """)
-    conn.commit()
-    cursor.close()
-    conn.close()
-    return {"ok": True, "mensaje": "Tabla migrada correctamente"}
+@app.get("/place-details")
+def place_details(nombre: str, direccion: str):
+    import googlemaps
+    gmaps = googlemaps.Client(key=os.getenv("GOOGLE_MAPS_API_KEY"))
+    try:
+        resultados = gmaps.find_place(
+            input=f"{nombre} {direccion}",
+            input_type="textquery",
+            fields=["place_id", "name"]
+        )
+        if not resultados["candidates"]:
+            return {"telefono": None, "horario": None}
+
+        place_id = resultados["candidates"][0]["place_id"]
+        detalles = gmaps.place(
+            place_id=place_id,
+            fields=["formatted_phone_number", "opening_hours"]
+        )
+        result = detalles.get("result", {})
+        horario = None
+        if "opening_hours" in result:
+            horario = " | ".join(result["opening_hours"].get("weekday_text", []))
+
+        return {
+            "telefono": result.get("formatted_phone_number"),
+            "horario": horario
+        }
+    except Exception as e:
+        return {"telefono": None, "horario": None}

@@ -56,19 +56,29 @@ def registrar_negocio(nombre: str, direccion: str, barrio: str, tipo: str = None
     cursor.close()
     conn.close()
 
-def marcar_visitado(nombre: str, direccion: str, resultado: str = "sin_respuesta", notas: str = ""):
-    """Marca un negocio como visitado — solo se llama cuando el vendedor lo confirma."""
+def marcar_visitado(nombre: str, direccion: str, resultado: str = "visitado", notas: str = "",
+                    telefono: str = None, email: str = None, horario: str = None,
+                    tipo_negocio: str = None, nivel_operativo: str = None,
+                    tiene_rotiseria: bool = False, tiene_produccion_propia: bool = False):
     conn = get_conn()
     cursor = conn.cursor()
-
     ahora = datetime.now()
-
     cursor.execute("""
         UPDATE negocios
-        SET visitado = TRUE, fecha_ultima_visita = %s, resultado = %s, notas = %s
+        SET visitado = TRUE,
+            fecha_ultima_visita = %s,
+            resultado = %s,
+            notas = %s,
+            telefono = %s,
+            email = %s,
+            horario = %s,
+            tipo_negocio = %s,
+            nivel_operativo = %s,
+            tiene_rotiseria = %s,
+            tiene_produccion_propia = %s
         WHERE nombre = %s AND direccion = %s
-    """, (ahora, resultado, notas, nombre, direccion))
-
+    """, (ahora, resultado, notas, telefono, email, horario, tipo_negocio,
+          nivel_operativo, tiene_rotiseria, tiene_produccion_propia, nombre, direccion))
     conn.commit()
     cursor.close()
     conn.close()
