@@ -1089,6 +1089,60 @@
     });
 
     mapa.fitBounds(bounds);
+
+  // Marker de la distribuidora (punto de partida)
+  const distribuidora = { lat: -34.8876, lng: -56.1571 };
+
+  new google.maps.Marker({
+    position: distribuidora,
+    map: mapa,
+    title: "Distribuidora - Tomás Gomensoro 3027",
+    icon: {
+      path: google.maps.SymbolPath.CIRCLE,
+      scale: 14,
+      fillColor: '#ffffff',
+      fillOpacity: 1,
+      strokeColor: '#f5a623',
+      strokeWeight: 3,
+    },
+    label: { text: "🏠", fontSize: "14px" },
+    zIndex: 999
+  });
+
+  bounds.extend(distribuidora);
+  mapa.fitBounds(bounds);
+
+  // Dibujar ruta real por calles
+  const directionsService = new google.maps.DirectionsService();
+  const directionsRenderer = new google.maps.DirectionsRenderer({
+    map: mapa,
+    suppressMarkers: true, // no pisa nuestros markers
+    polylineOptions: {
+      strokeColor: '#f5a623',
+      strokeOpacity: 0.6,
+      strokeWeight: 4,
+    }
+  });
+
+  const waypoints = negocios.slice(0, -1).map(n => ({
+    location: { lat: n.lat, lng: n.lng },
+    stopover: true
+  }));
+
+  directionsService.route({
+    origin: distribuidora,
+    destination: distribuidora,
+    waypoints: waypoints,
+    optimizeWaypoints: false, // ya está optimizado desde el backend
+    travelMode: google.maps.TravelMode.DRIVING,
+  }, (result, status) => {
+    if (status === 'OK') {
+      directionsRenderer.setDirections(result);
+    }
+  });
+
+  bounds.extend(distribuidora);
+  mapa.fitBounds(bounds);
   }
 
   function seleccionarNegocio(i) {
