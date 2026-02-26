@@ -14,6 +14,7 @@ gmaps = googlemaps.Client(key=os.getenv("GOOGLE_MAPS_API_KEY"))
 
 # Coordenadas centro + radio en metros por barrio
 BARRIOS = {
+    "Todo Montevideo":      {"lat": -34.9011, "lng": -56.1645, "radio": 15000},
     "Pocitos":              {"lat": -34.9059, "lng": -56.1507, "radio": 1000},
     "Punta Carretas":       {"lat": -34.9180, "lng": -56.1503, "radio": 900},
     "Parque Rodó":          {"lat": -34.9087, "lng": -56.1650, "radio": 800},
@@ -25,7 +26,7 @@ BARRIOS = {
     "Buceo":                {"lat": -34.8980, "lng": -56.1350, "radio": 1000},
     "Malvín":               {"lat": -34.8900, "lng": -56.1150, "radio": 1200},
     "Carrasco":             {"lat": -34.8720, "lng": -56.0650, "radio": 1500},
-    "Montevideo Viejo":     {"lat": -34.9050, "lng": -56.2100, "radio": 800},
+    "Ciudad Vieja":     {"lat": -34.9050, "lng": -56.2100, "radio": 800},
     "Sayago":               {"lat": -34.8750, "lng": -56.2200, "radio": 1200},
     "Tres Cruces":          {"lat": -34.8960, "lng": -56.1650, "radio": 800},
     "La Blanqueada":        {"lat": -34.8900, "lng": -56.1750, "radio": 900},
@@ -34,6 +35,47 @@ BARRIOS = {
     "Zona Industrial Norte":{"lat": -34.8400, "lng": -56.2000, "radio": 2000},
     "Zona Franca":          {"lat": -34.8300, "lng": -56.1500, "radio": 2000},
     "Parque Industrial":    {"lat": -34.8200, "lng": -56.1800, "radio": 2000},
+    # Expansión zona metropolitana y otros departamentos
+    "Ciudad del Plata":     {"lat": -34.7833, "lng": -56.3833, "radio": 3000},
+    "Libertad":             {"lat": -34.6333, "lng": -56.6167, "radio": 2000},
+    "Puntas de Valdez":     {"lat": -34.7500, "lng": -56.3000, "radio": 1500},
+    "Rafael Peraza":        {"lat": -34.8167, "lng": -56.0833, "radio": 1500},
+    "Scavino":              {"lat": -34.8000, "lng": -56.0500, "radio": 1500},
+    "San José de Mayo":     {"lat": -34.3333, "lng": -56.7167, "radio": 2500},
+    "Santa Lucía":          {"lat": -34.4500, "lng": -56.4000, "radio": 2000},
+    "Canelones":            {"lat": -34.5167, "lng": -56.2833, "radio": 2000},
+    "Aguas Corrientes":     {"lat": -34.4833, "lng": -55.9833, "radio": 1500},
+    "San Ramón":            {"lat": -34.2833, "lng": -55.9667, "radio": 1500},
+    "San Bautista":         {"lat": -34.4000, "lng": -56.1167, "radio": 1500},
+    "Santa Rosa":           {"lat": -34.3500, "lng": -56.5667, "radio": 1500},
+    "San Jacinto":          {"lat": -34.5500, "lng": -55.9500, "radio": 1500},
+    "Tala":                 {"lat": -34.3500, "lng": -55.7667, "radio": 1500},
+    "Sauce":                {"lat": -34.6333, "lng": -56.0667, "radio": 1500},
+    "Villa San José":       {"lat": -34.3500, "lng": -56.7000, "radio": 1500},
+    "Toledo":               {"lat": -34.6833, "lng": -56.0833, "radio": 1500},
+    "Joaquín Suárez":       {"lat": -34.6167, "lng": -55.9833, "radio": 1500},
+    "Barros Blancos":       {"lat": -34.7167, "lng": -56.0000, "radio": 1500},
+    "Pando":                {"lat": -34.7167, "lng": -55.9500, "radio": 2000},
+    "Empalme Olmos":        {"lat": -34.6833, "lng": -55.9167, "radio": 1500},
+    "Neptunia":             {"lat": -34.8333, "lng": -55.9500, "radio": 1500},
+    "Ciudad de la Costa":   {"lat": -34.8333, "lng": -56.0167, "radio": 3000},
+    "Villa El Tato":        {"lat": -34.8167, "lng": -56.0333, "radio": 1500},
+    "Piedras Blancas":      {"lat": -34.8333, "lng": -56.1167, "radio": 1500},
+    "Flor de Maroñas":      {"lat": -34.8667, "lng": -56.1000, "radio": 1500},
+    "Bella Italia":         {"lat": -34.8500, "lng": -56.1167, "radio": 1500},
+    "Camino Maldonado":     {"lat": -34.8667, "lng": -56.0833, "radio": 1500},
+    "Ituzaingó":            {"lat": -34.8833, "lng": -56.0667, "radio": 1500},
+    "Las Canteras":         {"lat": -34.8667, "lng": -56.0500, "radio": 1500},
+    "Malvín Norte":         {"lat": -34.8833, "lng": -56.1333, "radio": 1200},
+    "Paso Carrasco":        {"lat": -34.8500, "lng": -56.0333, "radio": 1500},
+    "Shangrilá":            {"lat": -34.8167, "lng": -55.9833, "radio": 1500},
+    "Lagomar":              {"lat": -34.8000, "lng": -55.9667, "radio": 1500},
+    "El Bosque":            {"lat": -34.7833, "lng": -55.9500, "radio": 1500},
+    "Nicolich":             {"lat": -34.8000, "lng": -56.0167, "radio": 1500},
+    "Villa Aeroparque":     {"lat": -34.8167, "lng": -56.0000, "radio": 1500},
+    "El Pinar":             {"lat": -34.7833, "lng": -55.9333, "radio": 1500},
+    "Salinas":              {"lat": -34.7667, "lng": -55.9000, "radio": 1500},
+    "Marindia":             {"lat": -34.7500, "lng": -55.8667, "radio": 1500},
 }
 
 CATEGORIAS_CHICO = [
@@ -69,17 +111,47 @@ def es_direccion_valida(lugar: dict) -> bool:
     return "+" not in direccion.split(",")[0]
 
 def buscar_negocios(barrio: str, modo: str = "chico") -> list:
-    info = BARRIOS.get(barrio)
-    if not info:
-        return []
-
     categorias = CATEGORIAS_GRANDE if modo == "grande" else CATEGORIAS_CHICO
     todos = []
     vistos = set()
 
+    # Montevideo completo — sin filtro de distancia
+    if barrio == "Todo Montevideo":
+        info_mvd = {"lat": -34.9011, "lng": -56.1645, "radio": 15000}
+        for categoria in categorias:
+            resultado = gmaps.places(
+                query=f"{categoria} en Montevideo",
+                location=(info_mvd["lat"], info_mvd["lng"]),
+                radius=info_mvd["radio"],
+                language="es"
+            )
+            for lugar in resultado["results"]:
+                if lugar["name"] not in vistos and es_direccion_valida(lugar):
+                    if not fue_visitado_recientemente(lugar["name"], lugar.get("formatted_address", "")):
+                        vistos.add(lugar["name"])
+                        lugar["_modo"] = modo
+                        todos.append(lugar)
+        return todos
+
+    # Búsqueda por barrio específico
+    info = BARRIOS.get(barrio)
+    if not info:
+        return []
+
     for categoria in categorias:
+        # Localidades fuera de Montevideo no llevan ", Montevideo" en el query
+        barrios_montevideo = [
+            "Pocitos", "Punta Carretas", "Parque Rodó", "Palermo", "Cordón",
+            "Centro", "Aguada", "Prado", "Buceo", "Malvín", "Carrasco",
+            "Ciudad Vieja", "Sayago", "Tres Cruces", "La Blanqueada",
+            "Unión", "Cerrito", "Zona Industrial Norte", "Zona Franca",
+            "Parque Industrial", "Piedras Blancas", "Flor de Maroñas",
+            "Bella Italia", "Camino Maldonado", "Ituzaingó", "Las Canteras",
+            "Malvín Norte"
+        ]
+        sufijo = ", Montevideo" if barrio in barrios_montevideo else ", Uruguay"
         resultado = gmaps.places(
-            query=f"{categoria} en {barrio}, Montevideo",
+            query=f"{categoria} en {barrio}{sufijo}",
             location=(info["lat"], info["lng"]),
             radius=info["radio"],
             language="es"
