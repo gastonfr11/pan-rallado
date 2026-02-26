@@ -577,6 +577,7 @@
     const btn = document.getElementById(`visitado-${i}`);
     if (!negocio || btn.classList.contains('marcado')) return;
     negocioParaVisitar = {...negocio, index:i};
+    window._negocioParaVisitar = negocioParaVisitar;
     document.getElementById('modalNombre').textContent = negocio.nombre;
     document.getElementById('modalTelefono').value = '';
     document.getElementById('modalHorario').value = '';
@@ -599,9 +600,11 @@
   function cerrarModal() {
     document.getElementById('modalVisitado').classList.remove('show');
     negocioParaVisitar = null;
-  }
+    window._negocioParaVisitar = null;
+} 
 
   async function guardarVisita() {
+    const negocioParaVisitar = window.negocioParaVisitar;
     if (!negocioParaVisitar) return;
     const payload = {
       nombre: negocioParaVisitar.nombre,
@@ -624,7 +627,10 @@
         cerrarModal();
         showToast(`✅ ${negocioParaVisitar.nombre} registrado`);
       }
-    } catch(e) { showToast('❌ Error al guardar'); }
+      console.log('Status:', res.status);
+      const body = await res.text();
+      console.log('Body:', body);
+    } catch(e) { console.error('Error guardarVisita:', e); showToast('❌ Error al guardar'); }
   }
 
   // ── DASHBOARD ─────────────────────────────────────────
