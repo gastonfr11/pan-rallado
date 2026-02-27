@@ -11,14 +11,16 @@ function abrirChatNegocio(i) {
 }
 
 function activarChat(negocio) {
+  negocioActivo = negocio || null;
+  historialChat = [];
   document.getElementById('chatEmpty').style.display = 'none';
   document.getElementById('chatMessages').style.display = 'flex';
-  document.getElementById('quickActionsBar').style.display = 'flex';
   document.getElementById('chatInputBar').style.display = 'flex';
+  document.getElementById('quickActionsBar').style.display = negocio ? 'flex' : 'none';
   document.getElementById('chatMessages').innerHTML = '';
   const msg = negocio
     ? `Listo para ${negocio.nombre}. ¿Qué necesitás?`
-    : `Hola, soy tu asistente comercial. Podés preguntarme sobre zonas, estrategias de venta, precios, o lo que necesites.`;
+    : `Hola, soy tu asistente comercial. Preguntame sobre zonas, estrategias, precios, o lo que necesites.`;
   agregarMensaje('assistant', msg);
 }
 
