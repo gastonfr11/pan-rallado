@@ -1,9 +1,9 @@
 // ── CHAT ──────────────────────────────────────────────
 async function abrirChatNegocio(i) {
   seleccionarNegocio(i);
-  const nuevo = negociosData[i];
+  const nuevo = { ...negociosData[i] };
 
-  // Enriquecer con datos guardados en la base de datos
+  // Buscar en historial primero (si ya fue visitado)
   try {
     const res = await fetch('/historial');
     const data = await res.json();
@@ -17,6 +17,16 @@ async function abrirChatNegocio(i) {
       if (guardado.notas) nuevo.notas = guardado.notas;
     }
   } catch(e) {}
+
+  // Si no tiene teléfono todavía, consultar Google Places
+  if (!nuevo.telefono) {
+    try {
+      const res = await fetch(`/place-details?nombre=${encodeURIComponent(nuevo.nombre)}&direccion=${encodeURIComponent(nuevo.direccion)}`);
+      const data = await res.json();
+      if (data.telefono) nuevo.telefono = data.telefono;
+      if (data.horario) nuevo.horario = data.horario;
+    } catch(e) {}
+  }
 
   if (!negocioActivo || negocioActivo.nombre !== nuevo.nombre) {
     negocioActivo = nuevo;
