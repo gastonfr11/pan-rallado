@@ -3,7 +3,6 @@ async function abrirChatNegocio(i) {
   seleccionarNegocio(i);
   const nuevo = { ...negociosData[i] };
 
-  // Buscar en historial primero (si ya fue visitado)
   try {
     const res = await fetch('/historial');
     const data = await res.json();
@@ -18,7 +17,6 @@ async function abrirChatNegocio(i) {
     }
   } catch(e) {}
 
-  // Si no tiene teléfono todavía, consultar Google Places
   if (!nuevo.telefono) {
     try {
       const res = await fetch(`/place-details?nombre=${encodeURIComponent(nuevo.nombre)}&direccion=${encodeURIComponent(nuevo.direccion)}`);
@@ -71,6 +69,17 @@ function agregarMensaje(role, texto) {
   return d;
 }
 
+function agregarMensajeAccion(texto) {
+  const c = document.getElementById('chatMessages');
+  const d = document.createElement('div');
+  d.className = 'msg assistant';
+  d.style.cssText = 'background:rgba(77,255,145,0.08);border:1px solid rgba(77,255,145,0.2);color:#4dff91;';
+  d.textContent = texto;
+  c.appendChild(d);
+  c.scrollTop = c.scrollHeight;
+  return d;
+}
+
 function agregarTyping() {
   const c = document.getElementById('chatMessages');
   const d = document.createElement('div');
@@ -110,9 +119,11 @@ async function enviarMensaje() {
   input.value = '';
   input.style.height = 'auto';
   document.getElementById('btnSend').disabled = true;
+
   agregarMensaje('user', texto);
   historialChat.push({ role: 'user', content: texto });
   agregarTyping();
+
   try {
     const res = await fetch('/chat', {
       method: 'POST',
@@ -121,13 +132,65 @@ async function enviarMensaje() {
     });
     const data = await res.json();
     quitarTyping();
-    historialChat.push({ role: 'assistant', content: data.respuesta });
-    agregarMensaje('assistant', data.respuesta);
+
+    // Manejar tool ejecutada
+    if (data.tool_ejecutada) {
+      agregarMensajeAccion(data.respuesta);
+      historialChat.push({ role: 'assistant', content: data.respuesta });
+
+      // Si la tool fue buscar_negocios, disparar la búsqueda en el frontend
+      if (data.tool_ejecutada === 'buscar_negocios') {
+        const { barrio, modo } = data.tool_input;
+        await ejecutarBusquedaDesdeChat(barrio, modo);
+      }
+
+      // Si marcó como visitado, actualizar el botón en la lista si existe
+      if (data.tool_ejecutada === 'marcar_visitado' && negocioActivo) {
+        const idx = negociosData.findIndex(n => n.nombre === negocioActivo.nombre);
+        if (idx >= 0) {
+          const btn = document.getElementById(`visitado-${idx}`);
+          if (btn) { btn.classList.add('marcado'); btn.disabled = true; btn.textContent = '✅ Visitado'; }
+        }
+      }
+    } else {
+      // Respuesta de texto normal
+      agregarMensaje('assistant', data.respuesta);
+      historialChat.push({ role: 'assistant', content: data.respuesta });
+    }
+
   } catch (e) {
     quitarTyping();
     agregarMensaje('assistant', '❌ Error al conectar.');
   } finally {
     document.getElementById('btnSend').disabled = false;
     input.focus();
+  }
+}
+
+async function ejecutarBusquedaDesdeChat(barrio, modo) {
+  agregarTyping();
+  try {
+    const res = await fetch('/generar-roadmap', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ barrio, enviar_whatsapp: false, modo: modo || 'chico' })
+    });
+    const data = await res.json();
+    quitarTyping();
+
+    if (data.error) {
+      agregarMensaje('assistant', '⚠️ ' + data.error);
+      return;
+    }
+
+    negociosData = data.seleccionados;
+    resetChat();
+    mostrarResultados(data);
+    agregarMensajeAccion(`✅ Encontré ${data.seleccionados.length} negocios en ${barrio}. Podés verlos en Lista o Mapa.`);
+    showToast(`✅ ${data.seleccionados.length} negocios en ${barrio}`);
+
+  } catch(e) {
+    quitarTyping();
+    agregarMensaje('assistant', '❌ Error al buscar negocios.');
   }
 }
