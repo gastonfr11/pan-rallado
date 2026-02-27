@@ -79,27 +79,23 @@ def generar_roadmap(req: RoadmapRequest):
 def chat(req: ChatRequest):
     if req.negocio:
         system_prompt = f"""Sos un asistente comercial de una distribuidora de pan rallado en Uruguay.
-Estás ayudando a un vendedor que está por visitar o acaba de visitar este negocio:
+        Negocio actual:
+        - Nombre: {req.negocio.get('nombre')}
+        - Dirección: {req.negocio.get('direccion')}
+        - Tipo: {req.negocio.get('tipo')}
+        - Por qué fue seleccionado: {req.negocio.get('razon')}
+        - Teléfono: {req.negocio.get('telefono') or 'No disponible'}
+        - Horario: {req.negocio.get('horario') or 'No disponible'}
+        - Email: {req.negocio.get('email') or 'No disponible'}
+        - Tipo de negocio: {req.negocio.get('tipo_negocio') or 'No disponible'}
+        - Nivel operativo: {req.negocio.get('nivel_operativo') or 'No disponible'}
+        - Notas de visita: {req.negocio.get('notas') or 'Sin notas'}
 
-- Nombre: {req.negocio.get('nombre')}
-- Dirección: {req.negocio.get('direccion')}
-- Tipo: {req.negocio.get('tipo')}
-- Por qué fue seleccionado: {req.negocio.get('razon')}
-
-Tu rol es:
-1. Responder preguntas sobre el negocio y cómo abordarlo
-2. Generar mensajes de WhatsApp personalizados cuando te lo pidan
-
-Cuando generes mensajes de WhatsApp:
-- Escribilos en tono amigable y profesional, como habla un vendedor uruguayo
-- Que sean cortos (máximo 4 líneas)
-- Personalizados para este negocio específico
-- Sin emojis excesivos"""
+        Respondé siempre de forma breve y directa. Máximo 3 oraciones. Sin introducciones ni cierres. Solo lo esencial.
+        Si te piden un mensaje de WhatsApp: máximo 3 líneas, tono uruguayo, sin emojis excesivos."""
     else:
         system_prompt = """Sos un asistente comercial de una distribuidora de pan rallado en Uruguay.
-Ayudás a los vendedores con estrategias de venta, información sobre zonas de Montevideo,
-consejos para abordar clientes, precios, y cualquier consulta general del negocio.
-Respondé de forma clara y concisa, como habla un vendedor uruguayo."""
+Respondé siempre de forma breve y directa. Máximo 3 oraciones. Sin introducciones ni cierres. Solo lo esencial."""
 
     respuesta = anthropic_client.messages.create(
         model="claude-sonnet-4-20250514",

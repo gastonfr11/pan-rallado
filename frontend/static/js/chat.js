@@ -1,7 +1,23 @@
 // ── CHAT ──────────────────────────────────────────────
-function abrirChatNegocio(i) {
+async function abrirChatNegocio(i) {
   seleccionarNegocio(i);
   const nuevo = negociosData[i];
+
+  // Enriquecer con datos guardados en la base de datos
+  try {
+    const res = await fetch('/historial');
+    const data = await res.json();
+    const guardado = data.negocios.find(n => n.nombre === nuevo.nombre);
+    if (guardado) {
+      if (guardado.telefono) nuevo.telefono = guardado.telefono;
+      if (guardado.horario) nuevo.horario = guardado.horario;
+      if (guardado.email) nuevo.email = guardado.email;
+      if (guardado.tipo_negocio) nuevo.tipo_negocio = guardado.tipo_negocio;
+      if (guardado.nivel_operativo) nuevo.nivel_operativo = guardado.nivel_operativo;
+      if (guardado.notas) nuevo.notas = guardado.notas;
+    }
+  } catch(e) {}
+
   if (!negocioActivo || negocioActivo.nombre !== nuevo.nombre) {
     negocioActivo = nuevo;
     historialChat = [];
