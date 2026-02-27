@@ -101,7 +101,12 @@
     <!-- ④ CHAT -->
     <div class="screen" id="chatScreen">
       <div class="chat-selector" id="chatSelector" style="display:none;">
-        <div class="chat-selector-label">Negocio activo</div>
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
+          <div class="chat-selector-label">Negocio activo</div>
+          <button onclick="activarChat(null)" style="background:none; border:1px solid var(--border); color:var(--text-dim); padding:4px 10px; border-radius:20px; font-size:0.7rem; cursor:pointer; font-family:'DM Sans',sans-serif;">
+            🌐 General
+          </button>
+        </div>
         <div class="chat-chips" id="chatChips"></div>
       </div>
       <div class="chat-empty" id="chatEmpty">

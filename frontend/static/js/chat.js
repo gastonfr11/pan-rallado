@@ -18,6 +18,9 @@ function activarChat(negocio) {
   document.getElementById('chatInputBar').style.display = 'flex';
   document.getElementById('quickActionsBar').style.display = negocio ? 'flex' : 'none';
   document.getElementById('chatMessages').innerHTML = '';
+  if (!negocio) {
+    document.querySelectorAll('.chat-negocio-chip').forEach(c => c.classList.remove('activo'));
+  }
   const msg = negocio
     ? `Listo para ${negocio.nombre}. ¿Qué necesitás?`
     : `Hola, soy tu asistente comercial. Preguntame sobre zonas, estrategias, precios, o lo que necesites.`;
