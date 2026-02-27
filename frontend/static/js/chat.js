@@ -16,18 +16,18 @@ function activarChat(negocio) {
   document.getElementById('quickActionsBar').style.display = 'flex';
   document.getElementById('chatInputBar').style.display = 'flex';
   document.getElementById('chatMessages').innerHTML = '';
-  agregarMensaje('assistant', `Listo para ${negocio.nombre}. ¿Qué necesitás?`);
+  const msg = negocio
+    ? `Listo para ${negocio.nombre}. ¿Qué necesitás?`
+    : `Hola, soy tu asistente comercial. Podés preguntarme sobre zonas, estrategias de venta, precios, o lo que necesites.`;
+  agregarMensaje('assistant', msg);
 }
 
 function resetChat() {
   negocioActivo = null;
   historialChat = [];
-  document.getElementById('chatEmpty').style.display = 'flex';
-  document.getElementById('chatMessages').style.display = 'none';
-  document.getElementById('quickActionsBar').style.display = 'none';
-  document.getElementById('chatInputBar').style.display = 'none';
   document.getElementById('chatSelector').style.display = 'none';
   document.querySelectorAll('.chat-negocio-chip').forEach(c => c.classList.remove('activo'));
+  activarChat(null);
 }
 
 function agregarMensaje(role, texto) {
@@ -75,21 +75,18 @@ function autoResize(el) {
 async function enviarMensaje() {
   const input = document.getElementById('chatInput');
   const texto = input.value.trim();
-  if (!texto || !negocioActivo) return;
-
+  if (!texto) return;
   input.value = '';
   input.style.height = 'auto';
   document.getElementById('btnSend').disabled = true;
-
   agregarMensaje('user', texto);
   historialChat.push({ role: 'user', content: texto });
   agregarTyping();
-
   try {
     const res = await fetch('/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ mensajes: historialChat, negocio: negocioActivo })
+      body: JSON.stringify({ mensajes: historialChat, negocio: negocioActivo || null })
     });
     const data = await res.json();
     quitarTyping();

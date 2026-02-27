@@ -61,7 +61,8 @@ class ChatRequest(BaseModel):
 
 @app.post("/chat")
 def chat(req: ChatRequest):
-    system_prompt = f"""Sos un asistente comercial de una distribuidora de pan rallado en Uruguay.
+    if req.negocio:
+        system_prompt = f"""Sos un asistente comercial de una distribuidora de pan rallado en Uruguay.
 Estás ayudando a un vendedor que está por visitar o acaba de visitar este negocio:
 
 - Nombre: {req.negocio.get('nombre')}
@@ -77,13 +78,12 @@ Cuando generes mensajes de WhatsApp:
 - Escribilos en tono amigable y profesional, como habla un vendedor uruguayo
 - Que sean cortos (máximo 4 líneas)
 - Personalizados para este negocio específico
-- Sin emojis excesivos
-
-Tipos de mensajes que podés generar:
-- Presentación comercial (primer contacto)
-- Seguimiento post-visita
-- Oferta o promoción
-- Recordatorio de pedido"""
+- Sin emojis excesivos"""
+    else:
+        system_prompt = """Sos un asistente comercial de una distribuidora de pan rallado en Uruguay.
+Ayudás a los vendedores con estrategias de venta, información sobre zonas de Montevideo,
+consejos para abordar clientes, precios, y cualquier consulta general del negocio.
+Respondé de forma clara y concisa, como habla un vendedor uruguayo."""
 
     respuesta = anthropic_client.messages.create(
         model="claude-sonnet-4-20250514",
@@ -91,7 +91,6 @@ Tipos de mensajes que podés generar:
         system=system_prompt,
         messages=[{"role": m.role, "content": m.content} for m in req.mensajes]
     )
-
     return {"respuesta": respuesta.content[0].text}
 
 from typing import Optional
