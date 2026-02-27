@@ -3,11 +3,13 @@ import sys
 import os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
+from typing import Optional, List
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
+import anthropic
 import main
 
 app = FastAPI(title="Pan Rallado API")
@@ -19,37 +21,17 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Servir archivos estáticos
 static_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "frontend", "static")
 app.mount("/static", StaticFiles(directory=static_path), name="static")
+
+anthropic_client = anthropic.Anthropic()
+
+# ── MODELS ────────────────────────────────────────────
 
 class RoadmapRequest(BaseModel):
     barrio: str
     enviar_whatsapp: bool = False
-    modo: str = "chico"  # "chico" o "grande"
-
-@app.get("/")
-def root():
-    index_path = os.path.join(static_path, "index.html")
-    return FileResponse(index_path)
-
-@app.get("/barrios")
-def get_barrios():
-    return {"barrios": list(main.BARRIOS.keys())}
-
-@app.post("/generar-roadmap")
-def generar_roadmap(req: RoadmapRequest):
-    resultado = main.generar_roadmap(
-        barrio=req.barrio,
-        enviar_whatsapp=req.enviar_whatsapp,
-        modo=req.modo
-    )
-    return resultado
-
-import anthropic
-from typing import List
-
-anthropic_client = anthropic.Anthropic()
+    modo: str = "chico"
 
 class Mensaje(BaseModel):
     role: str
@@ -58,6 +40,40 @@ class Mensaje(BaseModel):
 class ChatRequest(BaseModel):
     mensajes: List[Mensaje]
     negocio: Optional[dict] = None
+
+class MarcarVisitadoRequest(BaseModel):
+    nombre: str
+    direccion: str
+    resultado: str = "visitado"
+    notas: str = ""
+    telefono: Optional[str] = None
+    email: Optional[str] = None
+    horario: Optional[str] = None
+    tipo_negocio: Optional[str] = None
+    nivel_operativo: Optional[str] = None
+    tiene_rotiseria: bool = False
+    tiene_produccion_propia: bool = False
+
+    @field_validator('telefono', 'email', 'horario', 'tipo_negocio', 'nivel_operativo', mode='before')
+    @classmethod
+    def empty_str_to_none(cls, v):
+        if v == '':
+            return None
+        return v
+
+# ── ENDPOINTS ─────────────────────────────────────────
+
+@app.get("/")
+def root():
+    return FileResponse(os.path.join(static_path, "index.html"))
+
+@app.get("/barrios")
+def get_barrios():
+    return {"barrios": list(main.BARRIOS.keys())}
+
+@app.post("/generar-roadmap")
+def generar_roadmap(req: RoadmapRequest):
+    return main.generar_roadmap(barrio=req.barrio, enviar_whatsapp=req.enviar_whatsapp, modo=req.modo)
 
 @app.post("/chat")
 def chat(req: ChatRequest):
@@ -93,29 +109,6 @@ Respondé de forma clara y concisa, como habla un vendedor uruguayo."""
     )
     return {"respuesta": respuesta.content[0].text}
 
-from typing import Optional
-from pydantic import BaseModel, field_validator
-
-class MarcarVisitadoRequest(BaseModel):
-    nombre: str
-    direccion: str
-    resultado: str = "visitado"
-    notas: str = ""
-    telefono: Optional[str] = None
-    email: Optional[str] = None
-    horario: Optional[str] = None
-    tipo_negocio: Optional[str] = None
-    nivel_operativo: Optional[str] = None
-    tiene_rotiseria: bool = False
-    tiene_produccion_propia: bool = False
-
-    @field_validator('telefono', 'email', 'horario', 'tipo_negocio', 'nivel_operativo', mode='before')
-    @classmethod
-    def empty_str_to_none(cls, v):
-        if v == '':
-            return None
-        return v
-
 @app.post("/marcar-visitado")
 def marcar_visitado_endpoint(req: MarcarVisitadoRequest):
     from database import marcar_visitado as db_marcar
@@ -149,20 +142,12 @@ def place_details(nombre: str, direccion: str):
         )
         if not resultados["candidates"]:
             return {"telefono": None, "horario": None}
-
         place_id = resultados["candidates"][0]["place_id"]
-        detalles = gmaps.place(
-            place_id=place_id,
-            fields=["formatted_phone_number", "opening_hours"]
-        )
+        detalles = gmaps.place(place_id=place_id, fields=["formatted_phone_number", "opening_hours"])
         result = detalles.get("result", {})
         horario = None
         if "opening_hours" in result:
             horario = " | ".join(result["opening_hours"].get("weekday_text", []))
-
-        return {
-            "telefono": result.get("formatted_phone_number"),
-            "horario": horario
-        }
-    except Exception as e:
+        return {"telefono": result.get("formatted_phone_number"), "horario": horario}
+    except Exception:
         return {"telefono": None, "horario": None}
