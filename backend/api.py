@@ -57,7 +57,7 @@ class Mensaje(BaseModel):
 
 class ChatRequest(BaseModel):
     mensajes: List[Mensaje]
-    negocio: dict
+    negocio: Optional[dict] = None
 
 @app.post("/chat")
 def chat(req: ChatRequest):
