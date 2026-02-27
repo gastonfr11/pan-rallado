@@ -80,8 +80,8 @@ select:focus, textarea:focus, input:focus { border-color: var(--accent); }
 .empty-state p { font-size: 0.82rem; line-height: 1.5; }
 
 /* ── TOAST ── */
-#toast { position: fixed; bottom: calc(70px + var(--safe-bottom)); left: 50%; transform: translateX(-50%) translateY(20px); background: var(--surface2); border: 1px solid var(--border); color: var(--text); padding: 10px 18px; border-radius: 20px; font-size: 0.82rem; white-space: nowrap; opacity: 0; transition: all 0.25s; z-index: 200; pointer-events: none; }
-#toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+#toast { position: fixed; bottom: calc(70px + var(--safe-bottom)); left: 50%; transform: translateX(-50%) translateY(20px); background: var(--surface2); border: 1px solid var(--border); color: var(--text); padding: 12px 18px; border-radius: 14px; font-size: 0.82rem; white-space: normal; text-align: center; opacity: 0; transition: all 0.25s; z-index: 200; pointer-events: none; min-width: 220px; }
+#toast.show { opacity: 1; transform: translateX(-50%) translateY(0); pointer-events: all; }
 
 /* ── DESKTOP ── */
 @media (min-width: 768px) {

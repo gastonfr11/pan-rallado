@@ -125,8 +125,25 @@ async function chatDesdeHistorial(id) {
   }
 }
 
-async function desmarcarVisitado(nombre, direccion) {
-  if (!confirm(`¿Desmarcar "${nombre}" como visitado?`)) return;
+function desmarcarVisitado(nombre, direccion) {
+  // Toast de confirmación personalizado
+  const toast = document.getElementById('toast');
+  toast.innerHTML = `
+    <span>¿Desmarcar "${nombre}"?</span>
+    <div style="display:flex;gap:8px;margin-top:8px;">
+      <button onclick="confirmarDesmarcar('${nombre.replace(/'/g,"\\'")}','${direccion.replace(/'/g,"\\'")}');this.closest('#toast').classList.remove('show')" 
+        style="background:#ff4d4d;border:none;color:#fff;padding:5px 14px;border-radius:8px;font-size:0.8rem;cursor:pointer;font-family:'DM Sans',sans-serif;">
+        Confirmar
+      </button>
+      <button onclick="document.getElementById('toast').classList.remove('show')"
+        style="background:var(--surface2);border:1px solid var(--border);color:var(--text-mid);padding:5px 14px;border-radius:8px;font-size:0.8rem;cursor:pointer;font-family:'DM Sans',sans-serif;">
+        Cancelar
+      </button>
+    </div>`;
+  toast.classList.add('show');
+}
+
+async function confirmarDesmarcar(nombre, direccion) {
   try {
     await fetch('/desmarcar-visitado', {
       method: 'POST',
