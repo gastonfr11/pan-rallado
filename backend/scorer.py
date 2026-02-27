@@ -61,6 +61,48 @@ En la razón mencioná: tipo de operación, escala estimada, cantidad de reseña
 Sé específico y conciso (máximo 2 oraciones por razón).
 """
 
+def inferir_tipo(types: list) -> str:
+    TIPOS = {
+        "restaurant": "Restaurante",
+        "food": "Comida",
+        "bakery": "Panadería",
+        "cafe": "Cafetería",
+        "bar": "Bar",
+        "meal_takeaway": "Comida para llevar",
+        "meal_delivery": "Delivery",
+        "supermarket": "Supermercado",
+        "grocery_or_supermarket": "Almacén",
+        "convenience_store": "Kiosco",
+        "butcher_shop": "Carnicería",
+        "pizza_restaurant": "Pizzería",
+        "sandwich_shop": "Sandwichería",
+        "fast_food_restaurant": "Comida rápida",
+        "chicken_restaurant": "Pollería",
+        "steak_house": "Parrillada",
+        "italian_restaurant": "Restaurante italiano",
+        "spanish_restaurant": "Restaurante español",
+        "american_restaurant": "Restaurante americano",
+        "catering": "Catering",
+        "food_manufacturer": "Industria alimentaria",
+        "storage": "Depósito",
+        "wholesaler": "Mayorista",
+        "distributor": "Distribuidora",
+    }
+
+    # Excluir tipos genéricos
+    IGNORAR = {"establishment", "point_of_interest", "food", "store", "premise", "locality"}
+
+    for t in types:
+        if t in IGNORAR:
+            continue
+        if t in TIPOS:
+            return TIPOS[t]
+        # Si no está mapeado pero no es genérico, formatearlo
+        if t not in IGNORAR:
+            return t.replace("_", " ").capitalize()
+
+    return "Negocio"
+
 def score_negocios(negocios: list, modo: str = "chico") -> list:
     lista_texto = ""
     for i, n in enumerate(negocios):
@@ -121,7 +163,7 @@ Seleccioná exactamente 10 negocios ordenados de mayor a menor potencial. Si hay
                 "nombre": negocio["name"],
                 "direccion": negocio.get("formatted_address", "Sin dirección"),
                 "razon": item["razon"],
-                "tipo": negocio.get("types", ["negocio"])[0].replace("_", " "),
+                "tipo": inferir_tipo(negocio.get("types", [])),
                 "rating": negocio.get("rating", None),
                 "reseñas": negocio.get("user_ratings_total", 0),
                 "lat": negocio["geometry"]["location"]["lat"],
