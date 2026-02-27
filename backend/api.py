@@ -185,7 +185,12 @@ Cuando el vendedor quiera buscar negocios en un barrio, usá la herramienta busc
                 nombre=req.negocio.get('nombre'),
                 direccion=req.negocio.get('direccion'),
                 resultado=tool_input.get('resultado', 'visitado'),
-                notas=tool_input.get('notas', '')
+                notas=tool_input.get('notas', ''),
+                telefono=req.negocio.get('telefono'),
+                horario=req.negocio.get('horario'),
+                email=req.negocio.get('email'),
+                tipo_negocio=req.negocio.get('tipo_negocio') or req.negocio.get('tipo'),
+                nivel_operativo=req.negocio.get('nivel_operativo'),
             )
             return {
                 "respuesta": _confirmar_accion(tool_name, tool_input, req.negocio),
