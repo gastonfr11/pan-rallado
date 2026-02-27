@@ -70,6 +70,9 @@ async function cargarDashboard() {
           <button onclick="editarVisitado(${n.id})" style="background:var(--surface2);border:1px solid var(--border);color:var(--text-mid);padding:9px 14px;border-radius:10px;font-size:0.8rem;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;">
             ✏️ Editar
           </button>
+          <button onclick="desmarcarVisitado('${nombreEsc}','${dirEsc}')" style="background:rgba(255,77,77,0.08);border:1px solid rgba(255,77,77,0.25);color:#ff4d4d;padding:9px 14px;border-radius:10px;font-size:0.8rem;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;">
+            🗑️
+          </button>
         </div>
       </div>`;
     }).join('');
@@ -119,5 +122,20 @@ async function chatDesdeHistorial(id) {
     goTo('chat', document.querySelectorAll('.nav-btn')[3]);
   } catch(e) {
     showToast('❌ Error al abrir chat');
+  }
+}
+
+async function desmarcarVisitado(nombre, direccion) {
+  if (!confirm(`¿Desmarcar "${nombre}" como visitado?`)) return;
+  try {
+    await fetch('/desmarcar-visitado', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ nombre, direccion })
+    });
+    showToast('↩️ Negocio desmarcado');
+    cargarDashboard();
+  } catch(e) {
+    showToast('❌ Error al desmarcar');
   }
 }

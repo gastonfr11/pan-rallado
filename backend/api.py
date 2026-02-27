@@ -147,3 +147,13 @@ def place_details(nombre: str, direccion: str):
         return {"telefono": result.get("formatted_phone_number"), "horario": horario}
     except Exception:
         return {"telefono": None, "horario": None}
+    
+class DesmarcarVisitadoRequest(BaseModel):
+    nombre: str
+    direccion: str
+
+@app.post("/desmarcar-visitado")
+def desmarcar_visitado_endpoint(req: DesmarcarVisitadoRequest):
+    from database import desmarcar_visitado as db_desmarcar
+    db_desmarcar(req.nombre, req.direccion)
+    return {"ok": True}

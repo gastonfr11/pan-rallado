@@ -137,3 +137,25 @@ def resetear_db():
     conn.commit()
     cursor.close()
     conn.close()
+
+def desmarcar_visitado(nombre: str, direccion: str):
+    conn = get_conn()
+    cursor = conn.cursor()
+    cursor.execute("""
+        UPDATE negocios
+        SET visitado = FALSE,
+            resultado = NULL,
+            fecha_ultima_visita = NULL,
+            notas = NULL,
+            telefono = NULL,
+            email = NULL,
+            horario = NULL,
+            tipo_negocio = NULL,
+            nivel_operativo = NULL,
+            tiene_rotiseria = FALSE,
+            tiene_produccion_propia = FALSE
+        WHERE nombre = %s AND direccion = %s
+    """, (nombre, direccion))
+    conn.commit()
+    cursor.close()
+    conn.close()
