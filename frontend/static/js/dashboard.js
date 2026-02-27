@@ -54,7 +54,7 @@ async function cargarDashboard() {
           ${n.email ? `<div class="dashboard-detalle"><div class="dashboard-detalle-label">Email</div><div class="dashboard-detalle-valor">${n.email}</div></div>` : ''}
           <div class="dashboard-detalle"><div class="dashboard-detalle-label">Rotisería propia</div><div class="dashboard-detalle-valor">${n.tiene_rotiseria ? '✅ Sí' : '❌ No'}</div></div>
           <div class="dashboard-detalle"><div class="dashboard-detalle-label">Producción propia</div><div class="dashboard-detalle-valor">${n.tiene_produccion_propia ? '✅ Sí' : '❌ No'}</div></div>
-          ${n.horario ? `<div class="dashboard-detalle" style="grid-column:1/-1;"><div class="dashboard-detalle-label">Horario</div><div class="dashboard-detalle-valor">${n.horario}</div></div>` : ''}
+          ${n.horario?`<div class="dashboard-detalle" style="grid-column:1/-1;"><div class="dashboard-detalle-label">Horario</div><div class="dashboard-detalle-valor">${formatearHorario(n.horario)}</div></div>`:''}
           ${n.notas ? `<div class="dashboard-detalle" style="grid-column:1/-1;"><div class="dashboard-detalle-label">Notas</div><div class="dashboard-detalle-valor">${n.notas}</div></div>` : ''}
         </div>
         <div style="display:flex;gap:8px;margin-top:10px;">
@@ -155,4 +155,54 @@ async function confirmarDesmarcar(nombre, direccion) {
   } catch(e) {
     showToast('❌ Error al desmarcar');
   }
+}
+
+function formatearHorario(horario) {
+  if (!horario) return '';
+
+  const dias = {
+    'Monday': 'Lunes', 'Tuesday': 'Martes', 'Wednesday': 'Miércoles',
+    'Thursday': 'Jueves', 'Friday': 'Viernes', 'Saturday': 'Sábado', 'Sunday': 'Domingo'
+  };
+
+  const lineas = horario.split(' | ');
+
+  const parseadas = lineas.map(linea => {
+    // Extraer día y horario
+    const match = linea.match(/^(\w+):\s*(.+)$/);
+    if (!match) return null;
+    const dia = dias[match[1]] || match[1];
+    let horas = match[2];
+
+    if (horas === 'Closed') return { dia, horas: 'Cerrado' };
+
+    // Convertir AM/PM a formato 24h
+    horas = horas.replace(/(\d+):(\d+)\s*(AM|PM)/g, (_, h, m, ampm) => {
+      let hora = parseInt(h);
+      if (ampm === 'PM' && hora !== 12) hora += 12;
+      if (ampm === 'AM' && hora === 12) hora = 0;
+      return m === '00' ? `${hora}h` : `${hora}:${m}h`;
+    });
+
+    // Limpiar separadores
+    horas = horas.replace(' – ', ' a ').replace(', ', ' / ');
+
+    return { dia, horas };
+  }).filter(Boolean);
+
+  // Agrupar días consecutivos con el mismo horario
+  const grupos = [];
+  parseadas.forEach(({ dia, horas }) => {
+    const ultimo = grupos[grupos.length - 1];
+    if (ultimo && ultimo.horas === horas) {
+      ultimo.hasta = dia;
+    } else {
+      grupos.push({ desde: dia, hasta: null, horas });
+    }
+  });
+
+  return grupos.map(g => {
+    const rango = g.hasta ? `${g.desde} a ${g.hasta}` : g.desde;
+    return `<div style="margin-bottom:2px;"><span style="color:var(--text);">${rango}:</span> ${g.horas}</div>`;
+  }).join('');
 }
