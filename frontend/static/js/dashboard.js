@@ -64,6 +64,9 @@ async function cargarDashboard() {
             <option value="cliente" ${n.resultado === 'cliente' ? 'selected' : ''}>Cliente</option>
             <option value="no_interesado" ${n.resultado === 'no_interesado' ? 'selected' : ''}>No interesado</option>
           </select>
+          <button onclick="chatDesdeHistorial(${n.id})" style="background:var(--accent-dim);border:1px solid rgba(245,166,35,0.3);color:var(--accent);padding:9px 14px;border-radius:10px;font-size:0.8rem;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;">
+            💬 Chat
+          </button>
           <button onclick="editarVisitado(${n.id})" style="background:var(--surface2);border:1px solid var(--border);color:var(--text-mid);padding:9px 14px;border-radius:10px;font-size:0.8rem;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;">
             ✏️ Editar
           </button>
@@ -87,5 +90,34 @@ async function actualizarEstado(nombre, direccion, nuevoEstado) {
     cargarDashboard();
   } catch (e) {
     showToast('❌ Error al actualizar');
+  }
+}
+
+async function chatDesdeHistorial(id) {
+  try {
+    const res = await fetch('/historial');
+    const data = await res.json();
+    const n = data.negocios.find(x => x.id === id);
+    if (!n) return;
+
+    // Construir objeto negocio compatible con el chat
+    negocioActivo = {
+      nombre: n.nombre,
+      direccion: n.direccion,
+      tipo: n.tipo_negocio || 'negocio',
+      razon: n.notas || 'Cliente visitado',
+      telefono: n.telefono,
+      horario: n.horario,
+      email: n.email,
+      tipo_negocio: n.tipo_negocio,
+      nivel_operativo: n.nivel_operativo,
+      notas: n.notas,
+    };
+
+    historialChat = [];
+    activarChat(negocioActivo);
+    goTo('chat', document.querySelectorAll('.nav-btn')[3]);
+  } catch(e) {
+    showToast('❌ Error al abrir chat');
   }
 }
