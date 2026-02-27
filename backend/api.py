@@ -65,6 +65,10 @@ class DesmarcarVisitadoRequest(BaseModel):
     nombre: str
     direccion: str
 
+class GenerarMensajeWppRequest(BaseModel):
+    negocio: dict
+    tipo: str  # presentacion, seguimiento, oferta, recordatorio
+
 # ── TOOLS DEFINITION ──────────────────────────────────
 
 TOOLS = [
@@ -119,6 +123,21 @@ TOOLS = [
             },
             "required": ["barrio"]
         }
+    },
+    {
+        "name": "enviar_whatsapp",
+        "description": "Genera y abre WhatsApp con un mensaje personalizado para el negocio activo. Usá cuando el vendedor diga 'mandále un WhatsApp', 'enviá un mensaje de seguimiento', 'mandá una oferta', etc.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "tipo": {
+                    "type": "string",
+                    "enum": ["presentacion", "seguimiento", "oferta", "recordatorio"],
+                    "description": "Tipo de mensaje a generar"
+                }
+            },
+            "required": ["tipo"]
+        }
     }
 ]
 
@@ -135,6 +154,38 @@ def get_barrios():
 @app.post("/generar-roadmap")
 def generar_roadmap(req: RoadmapRequest):
     return main.generar_roadmap(barrio=req.barrio, enviar_whatsapp=req.enviar_whatsapp, modo=req.modo)
+
+@app.post("/generar-mensaje-wpp")
+def generar_mensaje_wpp(req: GenerarMensajeWppRequest):
+    n = req.negocio
+    tipos = {
+        "presentacion": "Escribí un mensaje de presentación comercial. Es el primer contacto, presentate como vendedor de una distribuidora de pan rallado y mencioná brevemente los productos.",
+        "seguimiento": "Escribí un mensaje de seguimiento post-visita. Ya los visitaste, querés saber si tomaron una decisión o si tienen alguna consulta.",
+        "oferta": "Escribí un mensaje con una oferta o promoción. Podés mencionar descuentos por volumen o condiciones especiales.",
+        "recordatorio": "Escribí un mensaje recordatorio de pedido. Son clientes que ya compraron y querés que repitan el pedido."
+    }
+    instruccion = tipos.get(req.tipo, tipos["presentacion"])
+
+    prompt = f"""Negocio: {n.get('nombre')}
+Tipo: {n.get('tipo_negocio') or n.get('tipo', 'negocio')}
+Dirección: {n.get('direccion', '').split(',')[0]}
+Notas: {n.get('notas') or 'Sin notas'}
+
+{instruccion}
+
+Reglas:
+- Máximo 3 líneas
+- Tono amigable y profesional, como habla un vendedor uruguayo
+- Sin emojis excesivos (máximo 1-2)
+- Sin saludos genéricos tipo "Estimado cliente"
+- Solo el texto del mensaje, sin explicaciones"""
+
+    response = anthropic_client.messages.create(
+        model="claude-sonnet-4-20250514",
+        max_tokens=256,
+        messages=[{"role": "user", "content": prompt}]
+    )
+    return {"mensaje": response.content[0].text.strip()}
 
 @app.post("/chat")
 def chat(req: ChatRequest):
@@ -153,15 +204,13 @@ Negocio actual:
 - Notas de visita: {req.negocio.get('notas') or 'Sin notas'}
 
 Respondé siempre de forma breve y directa. Máximo 3 oraciones. Sin introducciones ni cierres. Solo lo esencial.
-Si te piden un mensaje de WhatsApp: máximo 3 líneas, tono uruguayo, sin emojis excesivos.
-Cuando el vendedor quiera registrar una visita o agregar notas, usá las herramientas disponibles."""
+Cuando el vendedor quiera registrar una visita, agregar notas, buscar negocios o enviar WhatsApp, usá las herramientas disponibles."""
     else:
         system_prompt = """Sos un asistente comercial de una distribuidora de pan rallado en Uruguay.
 Respondé siempre de forma breve y directa. Máximo 3 oraciones. Sin introducciones ni cierres. Solo lo esencial.
 Cuando el vendedor quiera buscar negocios en un barrio, usá la herramienta buscar_negocios."""
 
-    # Usar tools solo si hay negocio activo (marcar/notas) o siempre (buscar)
-    tools = TOOLS if req.negocio else [TOOLS[2]]  # sin negocio solo buscar_negocios
+    tools = TOOLS if req.negocio else [TOOLS[2]]
 
     response = anthropic_client.messages.create(
         model="claude-sonnet-4-20250514",
@@ -171,14 +220,12 @@ Cuando el vendedor quiera buscar negocios en un barrio, usá la herramienta busc
         messages=[{"role": m.role, "content": m.content} for m in req.mensajes]
     )
 
-    # Verificar si el modelo quiere usar una herramienta
     tool_use_block = next((b for b in response.content if b.type == "tool_use"), None)
 
     if tool_use_block:
         tool_name = tool_use_block.name
         tool_input = tool_use_block.input
 
-        # Ejecutar la herramienta
         if tool_name == "marcar_visitado" and req.negocio:
             from database import marcar_visitado as db_marcar
             db_marcar(
@@ -215,7 +262,6 @@ Cuando el vendedor quiera buscar negocios en un barrio, usá la herramienta busc
         elif tool_name == "buscar_negocios":
             barrio = tool_input.get('barrio')
             modo = tool_input.get('modo', 'chico')
-            # Verificar que el barrio existe
             barrios_disponibles = list(main.BARRIOS.keys())
             barrio_match = next((b for b in barrios_disponibles if b.lower() == barrio.lower()), None)
             if not barrio_match:
@@ -226,7 +272,19 @@ Cuando el vendedor quiera buscar negocios en un barrio, usá la herramienta busc
                 "tool_input": {"barrio": barrio_match, "modo": modo}
             }
 
-    # Respuesta de texto normal
+        elif tool_name == "enviar_whatsapp" and req.negocio:
+            telefono = req.negocio.get('telefono')
+            if not telefono:
+                return {"respuesta": "❌ Este negocio no tiene teléfono guardado."}
+            return {
+                "respuesta": f"📲 Generando mensaje de WhatsApp...",
+                "tool_ejecutada": tool_name,
+                "tool_input": {
+                    "tipo": tool_input.get('tipo', 'presentacion'),
+                    "negocio": req.negocio
+                }
+            }
+
     texto = next((b.text for b in response.content if hasattr(b, 'text')), '')
     return {"respuesta": texto}
 

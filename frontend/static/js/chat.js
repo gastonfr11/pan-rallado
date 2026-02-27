@@ -133,18 +133,15 @@ async function enviarMensaje() {
     const data = await res.json();
     quitarTyping();
 
-    // Manejar tool ejecutada
     if (data.tool_ejecutada) {
       agregarMensajeAccion(data.respuesta);
       historialChat.push({ role: 'assistant', content: data.respuesta });
 
-      // Si la tool fue buscar_negocios, disparar la búsqueda en el frontend
       if (data.tool_ejecutada === 'buscar_negocios') {
         const { barrio, modo } = data.tool_input;
         await ejecutarBusquedaDesdeChat(barrio, modo);
       }
 
-      // Si marcó como visitado, actualizar el botón en la lista si existe
       if (data.tool_ejecutada === 'marcar_visitado' && negocioActivo) {
         const idx = negociosData.findIndex(n => n.nombre === negocioActivo.nombre);
         if (idx >= 0) {
@@ -152,8 +149,13 @@ async function enviarMensaje() {
           if (btn) { btn.classList.add('marcado'); btn.disabled = true; btn.textContent = '✅ Visitado'; }
         }
       }
+
+      if (data.tool_ejecutada === 'enviar_whatsapp') {
+        const { tipo, negocio } = data.tool_input;
+        await abrirWppDesdeChat(negocio, tipo);
+      }
+
     } else {
-      // Respuesta de texto normal
       agregarMensaje('assistant', data.respuesta);
       historialChat.push({ role: 'assistant', content: data.respuesta });
     }
@@ -184,7 +186,6 @@ async function ejecutarBusquedaDesdeChat(barrio, modo) {
     }
 
     negociosData = data.seleccionados;
-    resetChat();
     mostrarResultados(data);
     agregarMensajeAccion(`✅ Encontré ${data.seleccionados.length} negocios en ${barrio}. Podés verlos en Lista o Mapa.`);
     showToast(`✅ ${data.seleccionados.length} negocios en ${barrio}`);
@@ -193,4 +194,43 @@ async function ejecutarBusquedaDesdeChat(barrio, modo) {
     quitarTyping();
     agregarMensaje('assistant', '❌ Error al buscar negocios.');
   }
+}
+
+async function abrirWppDesdeChat(negocio, tipo) {
+  if (!negocio || !negocio.telefono) return;
+  agregarTyping();
+  try {
+    const res = await fetch('/generar-mensaje-wpp', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ negocio, tipo })
+    });
+    const data = await res.json();
+    quitarTyping();
+
+    // Mostrar preview en el chat con botón para abrir
+    const c = document.getElementById('chatMessages');
+    const d = document.createElement('div');
+    d.className = 'msg assistant';
+    d.style.cssText = 'background:rgba(37,211,102,0.08);border:1px solid rgba(37,211,102,0.25);';
+    d.innerHTML = `<div style="font-size:0.75rem;color:#25d366;margin-bottom:6px;font-weight:600;">📲 MENSAJE GENERADO</div>
+      <div style="color:var(--text);margin-bottom:10px;white-space:pre-wrap;">${data.mensaje}</div>
+      <button onclick="abrirWhatsAppDirecto('${negocio.telefono.replace(/[\s\-]/g,'')}', this)" 
+        style="background:#25d366;border:none;color:#fff;padding:8px 16px;border-radius:8px;font-size:0.8rem;cursor:pointer;font-family:'DM Sans',sans-serif;width:100%;">
+        Abrir en WhatsApp ↗
+      </button>`;
+    c.appendChild(d);
+    c.scrollTop = c.scrollHeight;
+
+  } catch(e) {
+    quitarTyping();
+    agregarMensaje('assistant', '❌ Error al generar el mensaje.');
+  }
+}
+
+function abrirWhatsAppDirecto(telRaw, btn) {
+  const mensaje = btn.previousElementSibling.textContent;
+  let tel = telRaw.replace(/[\s\-\+]/g, '');
+  if (!tel.startsWith('598')) tel = '598' + tel;
+  window.open(`https://wa.me/${tel}?text=${encodeURIComponent(mensaje)}`, '_blank');
 }
