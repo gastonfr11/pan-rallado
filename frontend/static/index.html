@@ -11,161 +11,13 @@
   <title>Pan Rallado</title>
   <link rel="manifest" href="/static/manifest.json">
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
-  <style>
-    :root {
-      --bg: #0a0a0a; --surface: #141414; --surface2: #1e1e1e; --border: #2a2a2a;
-      --accent: #f5a623; --accent-dim: rgba(245,166,35,0.12);
-      --text: #f0f0f0; --text-mid: #999; --text-dim: #555;
-      --red: #ff4d4d; --green: #4dff91;
-      --safe-bottom: env(safe-area-inset-bottom, 0px);
-      --safe-top: env(safe-area-inset-top, 0px);
-    }
-    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-    html, body { height: 100%; overflow: hidden; font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); }
-    #app { display: flex; flex-direction: column; height: 100%; height: 100dvh; }
-    #header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 12px 16px; padding-top: calc(12px + var(--safe-top)); display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
-    #header .logo-text { font-family: 'Bebas Neue', sans-serif; font-size: 1.5rem; color: var(--accent); letter-spacing: 2px; line-height: 1; }
-    #header .tagline { font-size: 0.7rem; color: var(--text-dim); letter-spacing: 0.5px; line-height: 1; }
-    #header .logo-icon { font-size: 1.4rem; }
-    #header .status-dot { width: 8px; height: 8px; background: var(--green); border-radius: 50%; margin-left: auto; box-shadow: 0 0 6px var(--green); animation: pulse-dot 2s infinite; }
-    @keyframes pulse-dot { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
-    #content { flex: 1; overflow: hidden; position: relative; }
-    .screen { position: absolute; inset: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 16px; display: none; flex-direction: column; gap: 12px; }
-    .screen.active { display: flex; }
-    #nav { background: var(--surface); border-top: 1px solid var(--border); display: flex; padding-bottom: var(--safe-bottom); flex-shrink: 0; }
-    .nav-btn { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 10px 4px; background: none; border: none; color: var(--text-dim); cursor: pointer; transition: color 0.15s; font-family: 'DM Sans', sans-serif; position: relative; }
-    .nav-btn.active { color: var(--accent); }
-    .nav-btn .nav-icon { font-size: 1.3rem; line-height: 1; }
-    .nav-btn .nav-label { font-size: 0.62rem; font-weight: 500; letter-spacing: 0.3px; }
-    .nav-btn::before { content: ''; position: absolute; top: 0; left: 25%; right: 25%; height: 2px; background: var(--accent); border-radius: 0 0 2px 2px; opacity: 0; transition: opacity 0.15s; }
-    .nav-btn.active::before { opacity: 1; }
-    .card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 16px; }
-    .card-title { font-family: 'Bebas Neue', sans-serif; font-size: 0.85rem; color: var(--accent); letter-spacing: 1.5px; margin-bottom: 12px; }
-    .field { display: flex; flex-direction: column; gap: 6px; }
-    .field label { font-size: 0.7rem; color: var(--text-mid); text-transform: uppercase; letter-spacing: 0.5px; font-weight: 500; }
-    select, textarea, input[type="text"] { width: 100%; background: var(--bg); border: 1px solid var(--border); color: var(--text); padding: 12px 14px; border-radius: 10px; font-size: 1rem; font-family: 'DM Sans', sans-serif; outline: none; appearance: none; -webkit-appearance: none; transition: border-color 0.15s; }
-    select:focus, textarea:focus, input:focus { border-color: var(--accent); }
-    .select-wrapper { position: relative; }
-    .select-wrapper::after { content: '▾'; position: absolute; right: 14px; top: 50%; transform: translateY(-50%); color: var(--text-mid); pointer-events: none; font-size: 0.9rem; }
-    .toggle-row { display: flex; align-items: center; justify-content: space-between; padding: 4px 0; }
-    .toggle-label { font-size: 0.9rem; color: var(--text-mid); }
-    .toggle { position: relative; width: 44px; height: 26px; flex-shrink: 0; }
-    .toggle input { display: none; }
-    .toggle-track { position: absolute; inset: 0; background: var(--surface2); border-radius: 13px; cursor: pointer; transition: background 0.2s; border: 1px solid var(--border); }
-    .toggle-thumb { position: absolute; width: 20px; height: 20px; background: var(--text-dim); border-radius: 50%; top: 3px; left: 3px; transition: transform 0.2s, background 0.2s; }
-    .toggle input:checked ~ .toggle-track { background: var(--accent-dim); border-color: var(--accent); }
-    .toggle input:checked ~ .toggle-thumb { transform: translateX(18px); background: var(--accent); }
-    .btn-primary { width: 100%; background: var(--accent); color: #000; border: none; padding: 15px; border-radius: 12px; font-family: 'Bebas Neue', sans-serif; font-size: 1.1rem; letter-spacing: 2px; cursor: pointer; transition: opacity 0.15s, transform 0.1s; display: flex; align-items: center; justify-content: center; gap: 8px; }
-    .btn-primary:active { transform: scale(0.98); opacity: 0.9; }
-    .btn-primary:disabled { background: var(--surface2); color: var(--text-dim); cursor: not-allowed; transform: none; }
-    #loadingOverlay { display: none; position: absolute; inset: 0; background: rgba(10,10,10,0.9); backdrop-filter: blur(4px); flex-direction: column; align-items: center; justify-content: center; gap: 16px; z-index: 100; }
-    #loadingOverlay.show { display: flex; }
-    .spinner-ring { width: 50px; height: 50px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.7s linear infinite; }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    #loadingText { font-size: 0.85rem; color: var(--text-mid); letter-spacing: 0.5px; }
-    .stats-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-    .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px; }
-    .stat-value { font-family: 'Bebas Neue', sans-serif; font-size: 1.8rem; color: var(--accent); line-height: 1; }
-    .stat-label { font-size: 0.68rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 3px; }
-    .negocio-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 14px; display: flex; gap: 12px; align-items: flex-start; cursor: pointer; transition: border-color 0.15s, background 0.15s; }
-    .negocio-card:active { background: var(--surface2); }
-    .negocio-card.activo { border-color: var(--accent); background: var(--accent-dim); }
-    .negocio-num { font-family: 'Bebas Neue', sans-serif; font-size: 1.8rem; color: var(--accent); line-height: 1; min-width: 28px; text-align: center; margin-top: 1px; }
-    .negocio-body { flex: 1; min-width: 0; }
-    .negocio-badge { display: inline-block; background: var(--accent-dim); color: var(--accent); border: 1px solid rgba(245,166,35,0.3); border-radius: 20px; padding: 2px 8px; font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; font-weight: 600; }
-    .negocio-nombre { font-size: 0.95rem; font-weight: 600; color: var(--text); margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .negocio-dir { font-size: 0.78rem; color: var(--text-dim); margin-bottom: 5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .negocio-razon { font-size: 0.78rem; color: var(--text-mid); font-style: italic; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-    .negocio-actions { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
-    .btn-waze { display: flex; align-items: center; gap: 5px; background: var(--surface2); border: 1px solid var(--border); color: var(--text-mid); padding: 7px 12px; border-radius: 8px; font-size: 0.75rem; font-weight: 500; cursor: pointer; transition: all 0.15s; text-decoration: none; }
-    .btn-waze:active { border-color: #00d4ff; color: #00d4ff; }
-    .btn-chat-quick { display: flex; align-items: center; gap: 5px; background: var(--accent-dim); border: 1px solid rgba(245,166,35,0.3); color: var(--accent); padding: 7px 12px; border-radius: 8px; font-size: 0.75rem; font-weight: 500; cursor: pointer; transition: all 0.15s; }
-    .btn-chat-quick:active { background: rgba(245,166,35,0.25); }
-    .btn-visitado { display: flex; align-items: center; gap: 5px; background: var(--surface2); border: 1px solid var(--border); color: var(--text-mid); padding: 7px 12px; border-radius: 8px; font-size: 0.75rem; font-weight: 500; cursor: pointer; transition: all 0.15s; }
-    .btn-visitado:active { background: rgba(77,255,145,0.15); border-color: #4dff91; color: #4dff91; }
-    .btn-visitado.marcado { background: rgba(77,255,145,0.1); border-color: #4dff91; color: #4dff91; cursor: default; }
-    #mapa { width: 100%; height: 100%; border-radius: 0; min-height: 300px; }
-    #mapaScreen { padding: 0; gap: 0; }
-    #mapaScreen .map-container { flex: 1; position: relative; min-height: 0; }
-    #mapaScreen .map-bottom { background: var(--surface); border-top: 1px solid var(--border); padding: 12px 16px; display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; flex-shrink: 0; }
-    #mapaScreen .map-bottom::-webkit-scrollbar { display: none; }
-    .map-chip { background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; padding: 7px 14px; font-size: 0.78rem; white-space: nowrap; cursor: pointer; color: var(--text-mid); transition: all 0.15s; flex-shrink: 0; }
-    .map-chip.activo { border-color: var(--accent); color: var(--accent); background: var(--accent-dim); }
-    #chatScreen { padding: 0; gap: 0; }
-    .chat-selector { padding: 12px 16px; border-bottom: 1px solid var(--border); background: var(--surface); flex-shrink: 0; }
-    .chat-selector-label { font-size: 0.68rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
-    .chat-chips { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
-    .chat-chips::-webkit-scrollbar { display: none; }
-    .chat-negocio-chip { background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; padding: 6px 12px; font-size: 0.78rem; white-space: nowrap; cursor: pointer; color: var(--text-mid); transition: all 0.15s; flex-shrink: 0; }
-    .chat-negocio-chip.activo { border-color: var(--accent); color: var(--accent); background: var(--accent-dim); }
-    .chat-empty { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; color: var(--text-dim); padding: 32px; text-align: center; }
-    .chat-empty-icon { font-size: 3rem; }
-    .chat-empty p { font-size: 0.85rem; line-height: 1.6; }
-    .chat-messages-area { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 12px 16px; display: flex; flex-direction: column; gap: 10px; min-height: 0; }
-    .msg { max-width: 85%; padding: 10px 13px; border-radius: 16px; font-size: 0.875rem; line-height: 1.5; }
-    .msg.user { background: var(--accent); color: #000; align-self: flex-end; border-bottom-right-radius: 4px; font-weight: 500; }
-    .msg.assistant { background: var(--surface2); color: var(--text); align-self: flex-start; border-bottom-left-radius: 4px; border: 1px solid var(--border); }
-    .typing-dots span { display: inline-block; width: 6px; height: 6px; background: var(--text-dim); border-radius: 50%; margin: 0 2px; animation: bounce 1.2s infinite; }
-    .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
-    .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
-    @keyframes bounce { 0%, 60%, 100% { transform: translateY(0); } 30% { transform: translateY(-6px); } }
-    .quick-actions-bar { padding: 8px 16px; display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; border-top: 1px solid var(--border); flex-shrink: 0; }
-    .quick-actions-bar::-webkit-scrollbar { display: none; }
-    .quick-btn { background: var(--surface2); border: 1px solid var(--border); color: var(--text-mid); padding: 7px 12px; border-radius: 20px; font-size: 0.75rem; white-space: nowrap; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all 0.15s; flex-shrink: 0; }
-    .quick-btn:active { border-color: var(--accent); color: var(--accent); }
-    .chat-input-bar { padding: 10px 16px; padding-bottom: calc(10px + var(--safe-bottom)); border-top: 1px solid var(--border); display: flex; gap: 8px; align-items: flex-end; background: var(--surface); flex-shrink: 0; }
-    .chat-input-bar textarea { flex: 1; resize: none; min-height: 40px; max-height: 100px; padding: 10px 12px; border-radius: 10px; font-size: 0.9rem; }
-    .btn-send { width: 40px; height: 40px; background: var(--accent); border: none; border-radius: 10px; color: #000; font-size: 1rem; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: opacity 0.15s; }
-    .btn-send:disabled { background: var(--surface2); color: var(--text-dim); }
-    .empty-state { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 48px 24px; text-align: center; gap: 10px; color: var(--text-dim); }
-    .empty-state-icon { font-size: 3rem; margin-bottom: 4px; }
-    .empty-state h3 { font-size: 1rem; color: var(--text-mid); font-weight: 500; }
-    .empty-state p { font-size: 0.82rem; line-height: 1.5; }
-    #toast { position: fixed; bottom: calc(70px + var(--safe-bottom)); left: 50%; transform: translateX(-50%) translateY(20px); background: var(--surface2); border: 1px solid var(--border); color: var(--text); padding: 10px 18px; border-radius: 20px; font-size: 0.82rem; white-space: nowrap; opacity: 0; transition: all 0.25s; z-index: 200; pointer-events: none; }
-    #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
-    @media (min-width: 768px) {
-      body { display: flex; align-items: center; justify-content: center; background: #050505; }
-      #app { width: 390px; height: 844px; border-radius: 40px; overflow: hidden; box-shadow: 0 40px 80px rgba(0,0,0,0.8); border: 1px solid #2a2a2a; }
-    }
-
-    /* ── DASHBOARD ── */
-    .dashboard-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 14px 16px; }
-    .dashboard-card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
-    .dashboard-card-nombre { font-size: 0.95rem; font-weight: 600; color: var(--text); margin-bottom: 3px; }
-    .dashboard-card-dir { font-size: 0.78rem; color: var(--text-dim); }
-    .estado-badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 0.65rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; white-space: nowrap; }
-    .estado-visitado { background: rgba(77,255,145,0.1); color: #4dff91; border: 1px solid rgba(77,255,145,0.3); }
-    .estado-interesado { background: rgba(245,166,35,0.1); color: #f5a623; border: 1px solid rgba(245,166,35,0.3); }
-    .estado-cliente { background: rgba(100,200,255,0.1); color: #64c8ff; border: 1px solid rgba(100,200,255,0.3); }
-    .estado-no_interesado { background: rgba(255,77,77,0.1); color: #ff4d4d; border: 1px solid rgba(255,77,77,0.3); }
-    .dashboard-detalles { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
-    .dashboard-detalle { display: flex; flex-direction: column; gap: 2px; }
-    .dashboard-detalle-label { font-size: 0.62rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px; }
-    .dashboard-detalle-valor { font-size: 0.8rem; color: var(--text-mid); }
-    .dashboard-select-estado { margin-top: 10px; width: 100%; background: var(--bg); border: 1px solid var(--border); color: var(--text); padding: 9px 12px; border-radius: 10px; font-size: 0.85rem; font-family: 'DM Sans', sans-serif; outline: none; appearance: none; -webkit-appearance: none; }
-
-    /* ── MODAL ── */
-    #modalVisitado { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(4px); z-index: 300; overflow-y: auto; padding: 20px 16px; padding-bottom: calc(20px + var(--safe-bottom)); }
-    #modalVisitado.show { display: flex; align-items: flex-start; justify-content: center; }
-    .modal-content { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 20px; width: 100%; max-width: 440px; display: flex; flex-direction: column; gap: 14px; }
-    .modal-title { font-family: 'Bebas Neue', sans-serif; font-size: 1.1rem; color: var(--accent); letter-spacing: 1.5px; }
-    .modal-negocio-nombre { font-size: 0.95rem; font-weight: 600; color: var(--text); padding-bottom: 12px; border-bottom: 1px solid var(--border); }
-    .modal-field { display: flex; flex-direction: column; gap: 6px; }
-    .modal-field label { font-size: 0.7rem; color: var(--text-mid); text-transform: uppercase; letter-spacing: 0.5px; }
-    .modal-field input, .modal-field select, .modal-field textarea { background: var(--bg); border: 1px solid var(--border); color: var(--text); padding: 10px 12px; border-radius: 10px; font-size: 0.9rem; font-family: 'DM Sans', sans-serif; outline: none; width: 100%; appearance: none; -webkit-appearance: none; }
-    .modal-field textarea { resize: none; min-height: 70px; }
-    .modal-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-    .toggle-field { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border); }
-    .toggle-field label { font-size: 0.85rem; color: var(--text-mid); }
-    .modal-actions { display: flex; gap: 10px; margin-top: 4px; }
-    .btn-modal-cancel { flex: 1; background: var(--surface2); border: 1px solid var(--border); color: var(--text-mid); padding: 13px; border-radius: 12px; font-family: 'Bebas Neue', sans-serif; font-size: 1rem; letter-spacing: 1.5px; cursor: pointer; }
-    .btn-modal-save { flex: 2; background: var(--accent); border: none; color: #000; padding: 13px; border-radius: 12px; font-family: 'Bebas Neue', sans-serif; font-size: 1rem; letter-spacing: 1.5px; cursor: pointer; }
-    .auto-badge { display: inline-block; background: rgba(100,200,255,0.1); color: #64c8ff; border: 1px solid rgba(100,200,255,0.2); border-radius: 4px; padding: 1px 6px; font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.5px; margin-left: 6px; }
-  </style>
+  <link rel="stylesheet" href="/static/css/base.css">
+  <link rel="stylesheet" href="/static/css/components.css">
 </head>
 <body>
 <div id="app">
 
+  <!-- HEADER -->
   <div id="header">
     <div class="logo-icon">🥖</div>
     <div>
@@ -175,6 +27,7 @@
     <div class="status-dot"></div>
   </div>
 
+  <!-- CONTENT -->
   <div id="content">
     <div id="loadingOverlay">
       <div class="spinner-ring"></div>
@@ -188,7 +41,9 @@
         <div style="display:flex;flex-direction:column;gap:12px;">
           <div class="field">
             <label>Barrio</label>
-            <div class="select-wrapper"><select id="barrio"><option value="">Cargando...</option></select></div>
+            <div class="select-wrapper">
+              <select id="barrio"><option value="">Cargando...</option></select>
+            </div>
           </div>
           <div class="field">
             <label>Tipo de cliente</label>
@@ -210,7 +65,9 @@
           <button class="btn-primary" id="btnGenerar" onclick="generarRoadmap()">⚡ GENERAR ROADMAP</button>
         </div>
       </div>
-      <div id="statsContainer" style="display:none;"><div class="stats-row" id="statsRow"></div></div>
+      <div id="statsContainer" style="display:none;">
+        <div class="stats-row" id="statsRow"></div>
+      </div>
       <div class="empty-state" id="emptyState">
         <div class="empty-state-icon">🗺️</div>
         <h3>Sin resultados aún</h3>
@@ -296,6 +153,7 @@
 
   </div>
 
+  <!-- NAV -->
   <nav id="nav">
     <button class="nav-btn active" onclick="goTo('generar',this)"><div class="nav-icon">⚡</div><div class="nav-label">Generar</div></button>
     <button class="nav-btn" onclick="goTo('lista',this)"><div class="nav-icon">📋</div><div class="nav-label">Lista</div></button>
@@ -355,11 +213,19 @@
     </div>
     <div class="toggle-field">
       <label>¿Tiene rotisería propia?</label>
-      <label class="toggle"><input type="checkbox" id="modalRotiseria"><div class="toggle-track"></div><div class="toggle-thumb"></div></label>
+      <label class="toggle">
+        <input type="checkbox" id="modalRotiseria">
+        <div class="toggle-track"></div>
+        <div class="toggle-thumb"></div>
+      </label>
     </div>
     <div class="toggle-field">
       <label>¿Tiene producción propia?</label>
-      <label class="toggle"><input type="checkbox" id="modalProduccion"><div class="toggle-track"></div><div class="toggle-thumb"></div></label>
+      <label class="toggle">
+        <input type="checkbox" id="modalProduccion">
+        <div class="toggle-track"></div>
+        <div class="toggle-thumb"></div>
+      </label>
     </div>
     <div class="modal-field">
       <label>Notas</label>
@@ -374,387 +240,18 @@
 
 <div id="toast"></div>
 
-<script>
-  let mapa = null, markers = [], infoWindows = [], negociosData = [], negocioActivo = null, historialChat = [], negocioParaVisitar = null;
-
-  const screens = { generar:'generarScreen', lista:'listaScreen', mapa:'mapaScreen', chat:'chatScreen', dashboard:'dashboardScreen' };
-
-  function goTo(name, btn) {
-    Object.values(screens).forEach(id => { const el=document.getElementById(id); if(el) el.classList.remove('active'); });
-    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-    const screen = document.getElementById(screens[name]);
-    if (screen) screen.classList.add('active');
-    if (btn) btn.classList.add('active');
-    if (name === 'dashboard') cargarDashboard();
-  }
-
-  async function cargarBarrios() {
-    try {
-      const res = await fetch('/barrios');
-      const data = await res.json();
-      document.getElementById('barrio').innerHTML = data.barrios.map(b => `<option value="${b}">${b}</option>`).join('');
-      const filtro = document.getElementById('filtroBarrio');
-      if (filtro) filtro.innerHTML = '<option value="">Todos los barrios</option>' + data.barrios.map(b => `<option value="${b}">${b}</option>`).join('');
-    } catch (e) {
-      document.getElementById('barrio').innerHTML = '<option value="Pocitos">Pocitos</option>';
-    }
-  }
-
-  async function generarRoadmap() {
-    const barrio = document.getElementById('barrio').value;
-    const whatsapp = document.getElementById('whatsapp').checked;
-    const modo = document.getElementById('modo').value;
-    if (!barrio) return;
-    const btn = document.getElementById('btnGenerar');
-    btn.disabled = true;
-    const overlay = document.getElementById('loadingOverlay');
-    overlay.classList.add('show');
-    document.getElementById('loadingText').textContent = `Buscando negocios en ${barrio}...`;
-    document.getElementById('emptyState').style.display = 'none';
-    try {
-      const res = await fetch('/generar-roadmap', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({barrio, enviar_whatsapp:whatsapp, modo}) });
-      const data = await res.json();
-      overlay.classList.remove('show');
-      if (data.error) { showToast('⚠️ ' + data.error); document.getElementById('emptyState').style.display='flex'; return; }
-      negociosData = data.seleccionados;
-      resetChat();
-      mostrarResultados(data);
-      showToast('✅ ' + data.seleccionados.length + ' negocios encontrados');
-    } catch (e) {
-      overlay.classList.remove('show');
-      showToast('❌ Error de conexión');
-      document.getElementById('emptyState').style.display = 'flex';
-    } finally { btn.disabled = false; }
-  }
-
-  function mostrarResultados(data) {
-    document.getElementById('statsContainer').style.display = 'block';
-    document.getElementById('statsRow').innerHTML = [
-      {v:data.total_encontrados, l:'Encontrados'},
-      {v:data.seleccionados.length, l:'Seleccionados'},
-      {v:data.distancia_km ? data.distancia_km+' km':'—', l:'Distancia'},
-      {v:data.tiempo_min ? data.tiempo_min+' min':'—', l:'Tiempo'},
-    ].map(s=>`<div class="stat-card"><div class="stat-value">${s.v}</div><div class="stat-label">${s.l}</div></div>`).join('');
-
-    document.getElementById('listaEmpty').style.display = 'none';
-    const lc = document.getElementById('listaNegociosContainer');
-    lc.style.display = 'flex'; lc.style.flexDirection = 'column'; lc.style.gap = '10px';
-    lc.innerHTML = data.seleccionados.map((n,i) => `
-      <div class="negocio-card" id="card-${i}" onclick="seleccionarNegocio(${i})">
-        <div class="negocio-num">${i+1}</div>
-        <div class="negocio-body">
-          <div class="negocio-badge">${n.tipo||'negocio'}</div>
-          <div class="negocio-nombre">${n.nombre}</div>
-          <div class="negocio-dir">📍 ${n.direccion.split(',')[0]}</div>
-          <div class="negocio-razon">💡 ${n.razon}</div>
-          <div class="negocio-actions">
-            <a class="btn-waze" href="https://waze.com/ul?ll=${n.lat},${n.lng}&navigate=yes" target="_blank" onclick="event.stopPropagation()">🚗 Waze</a>
-            <button class="btn-chat-quick" onclick="event.stopPropagation();abrirChatNegocio(${i})">💬 Chat</button>
-            <button class="btn-visitado" id="visitado-${i}" onclick="event.stopPropagation();marcarVisitado(${i})">✅ Visitado</button>
-          </div>
-        </div>
-      </div>`).join('');
-
-    document.getElementById('mapaEmpty').style.display = 'none';
-    const mc = document.getElementById('mapChips'); mc.style.display='flex';
-    mc.innerHTML = data.seleccionados.map((n,i)=>`<div class="map-chip" id="chip-${i}" onclick="seleccionarNegocio(${i})">${i+1}. ${n.nombre.split(' ').slice(0,2).join(' ')}</div>`).join('');
-
-    document.getElementById('chatSelector').style.display = 'block';
-    document.getElementById('chatChips').innerHTML = data.seleccionados.map((n,i)=>`<div class="chat-negocio-chip" id="chatChip-${i}" onclick="abrirChatNegocio(${i})">${i+1}. ${n.nombre.split(' ').slice(0,3).join(' ')}</div>`).join('');
-
-    iniciarMapa(data.seleccionados);
-  }
-
-  function iniciarMapa(negocios) {
-    markers.forEach(m=>m.setMap(null)); markers=[]; infoWindows=[];
-    const centro = {lat:negocios[0].lat, lng:negocios[0].lng};
-    if (!mapa) {
-      mapa = new google.maps.Map(document.getElementById('mapa'), {zoom:14, center:centro, styles:mapaNocturno(), mapTypeControl:false, streetViewControl:false, fullscreenControl:false, zoomControl:false});
-    } else { mapa.setCenter(centro); mapa.setZoom(14); }
-    const bounds = new google.maps.LatLngBounds();
-    negocios.forEach((n,i) => {
-      const pos = {lat:n.lat, lng:n.lng};
-      bounds.extend(pos);
-      const marker = new google.maps.Marker({position:pos, map:mapa, title:n.nombre,
-        label:{text:String(i+1), color:'#000', fontWeight:'bold', fontSize:'12px'},
-        icon:{path:google.maps.SymbolPath.CIRCLE, scale:18, fillColor:'#f5a623', fillOpacity:1, strokeColor:'#000', strokeWeight:1.5}});
-      const iw = new google.maps.InfoWindow({content:`<div style="font-family:sans-serif;max-width:180px;padding:4px;"><strong style="font-size:13px;">${n.nombre}</strong><p style="color:#555;font-size:11px;margin:4px 0;">${n.direccion.split(',')[0]}</p><a href="https://waze.com/ul?ll=${n.lat},${n.lng}&navigate=yes" target="_blank" style="font-size:11px;color:#00b4ff;text-decoration:none;">🚗 Waze</a></div>`});
-      marker.addListener('click',()=>{ infoWindows.forEach(w=>w.close()); iw.open(mapa,marker); seleccionarNegocio(i); });
-      markers.push(marker); infoWindows.push(iw);
-    });
-
-    const distribuidora = {lat:-34.8731389, lng:-56.1590675};
-    new google.maps.Marker({position:distribuidora, map:mapa, title:'Distribuidora - Tomás Gomensoro 3027',
-      icon:{path:google.maps.SymbolPath.CIRCLE, scale:14, fillColor:'#ffffff', fillOpacity:1, strokeColor:'#f5a623', strokeWeight:3},
-      label:{text:'🏠', fontSize:'14px'}, zIndex:999});
-    bounds.extend(distribuidora);
-    mapa.fitBounds(bounds);
-
-    const ds = new google.maps.DirectionsService();
-    const dr = new google.maps.DirectionsRenderer({map:mapa, suppressMarkers:true, polylineOptions:{strokeColor:'#f5a623', strokeOpacity:0.6, strokeWeight:4}});
-    ds.route({
-      origin:distribuidora, destination:distribuidora,
-      waypoints:negocios.map(n=>({location:{lat:n.lat,lng:n.lng}, stopover:true})),
-      optimizeWaypoints:false, travelMode:google.maps.TravelMode.DRIVING
-    }, (result,status)=>{ if(status==='OK'){ dr.setDirections(result); mapa.fitBounds(bounds); } });
-  }
-
-  function seleccionarNegocio(i) {
-    if (markers.length>i) { infoWindows.forEach(w=>w.close()); infoWindows[i].open(mapa,markers[i]); if(mapa){mapa.panTo(markers[i].getPosition());mapa.setZoom(16);} }
-    document.querySelectorAll('.negocio-card').forEach(c=>c.classList.remove('activo'));
-    const card=document.getElementById(`card-${i}`); if(card) card.classList.add('activo');
-    document.querySelectorAll('.map-chip').forEach(c=>c.classList.remove('activo'));
-    const chip=document.getElementById(`chip-${i}`); if(chip){chip.classList.add('activo');chip.scrollIntoView({inline:'center',behavior:'smooth'});}
-    document.querySelectorAll('.chat-negocio-chip').forEach(c=>c.classList.remove('activo'));
-    const cc=document.getElementById(`chatChip-${i}`); if(cc) cc.classList.add('activo');
-  }
-
-  function abrirChatNegocio(i) {
-    seleccionarNegocio(i);
-    const nuevo = negociosData[i];
-    if (!negocioActivo || negocioActivo.nombre !== nuevo.nombre) { negocioActivo=nuevo; historialChat=[]; activarChat(nuevo); }
-    goTo('chat', document.querySelectorAll('.nav-btn')[3]);
-  }
-
-  function activarChat(negocio) {
-    document.getElementById('chatEmpty').style.display='none';
-    document.getElementById('chatMessages').style.display='flex';
-    document.getElementById('quickActionsBar').style.display='flex';
-    document.getElementById('chatInputBar').style.display='flex';
-    document.getElementById('chatMessages').innerHTML='';
-    agregarMensaje('assistant',`Listo para ${negocio.nombre}. ¿Qué necesitás?`);
-  }
-
-  function resetChat() {
-    negocioActivo=null; historialChat=[];
-    document.getElementById('chatEmpty').style.display='flex';
-    document.getElementById('chatMessages').style.display='none';
-    document.getElementById('quickActionsBar').style.display='none';
-    document.getElementById('chatInputBar').style.display='none';
-    document.getElementById('chatSelector').style.display='none';
-    document.querySelectorAll('.chat-negocio-chip').forEach(c=>c.classList.remove('activo'));
-  }
-
-  function agregarMensaje(role, texto) {
-    const c=document.getElementById('chatMessages');
-    const d=document.createElement('div'); d.className=`msg ${role}`; d.textContent=texto;
-    c.appendChild(d); c.scrollTop=c.scrollHeight; return d;
-  }
-
-  function agregarTyping() {
-    const c=document.getElementById('chatMessages');
-    const d=document.createElement('div'); d.className='msg assistant'; d.id='typing-indicator';
-    d.innerHTML='<div class="typing-dots"><span></span><span></span><span></span></div>';
-    c.appendChild(d); c.scrollTop=c.scrollHeight;
-  }
-
-  function quitarTyping() { const el=document.getElementById('typing-indicator'); if(el) el.remove(); }
-
-  function quickAction(texto) { document.getElementById('chatInput').value=texto; enviarMensaje(); }
-
-  function handleKey(e) { if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();enviarMensaje();} }
-
-  function autoResize(el) { el.style.height='auto'; el.style.height=Math.min(el.scrollHeight,100)+'px'; }
-
-  async function enviarMensaje() {
-    const input=document.getElementById('chatInput');
-    const texto=input.value.trim();
-    if(!texto||!negocioActivo) return;
-    input.value=''; input.style.height='auto';
-    document.getElementById('btnSend').disabled=true;
-    agregarMensaje('user',texto); historialChat.push({role:'user',content:texto}); agregarTyping();
-    try {
-      const res=await fetch('/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mensajes:historialChat,negocio:negocioActivo})});
-      const data=await res.json(); quitarTyping();
-      historialChat.push({role:'assistant',content:data.respuesta}); agregarMensaje('assistant',data.respuesta);
-    } catch(e) { quitarTyping(); agregarMensaje('assistant','❌ Error al conectar.'); }
-    finally { document.getElementById('btnSend').disabled=false; input.focus(); }
-  }
-
-  // ── MODAL VISITADO ────────────────────────────────────
-  async function marcarVisitado(i) {
-    const negocio = negociosData[i];
-    const btn = document.getElementById(`visitado-${i}`);
-    if (!negocio || btn.classList.contains('marcado')) return;
-    negocioParaVisitar = {...negocio, index:i};
-    window._negocioParaVisitar = negocioParaVisitar;
-    document.getElementById('modalNombre').textContent = negocio.nombre;
-    document.getElementById('modalTelefono').value = '';
-    document.getElementById('modalHorario').value = '';
-    document.getElementById('modalEmail').value = '';
-    document.getElementById('modalTipoNegocio').value = negocio.tipo || '';
-    document.getElementById('modalNivel').value = '';
-    document.getElementById('modalRotiseria').checked = false;
-    document.getElementById('modalProduccion').checked = false;
-    document.getElementById('modalNotas').value = '';
-    document.getElementById('modalEstado').value = 'visitado';
-    document.getElementById('modalVisitado').classList.add('show');
-    try {
-      const res = await fetch(`/place-details?nombre=${encodeURIComponent(negocio.nombre)}&direccion=${encodeURIComponent(negocio.direccion)}`);
-      const data = await res.json();
-      if (data.telefono) document.getElementById('modalTelefono').value = data.telefono;
-      if (data.horario) document.getElementById('modalHorario').value = data.horario;
-    } catch(e) {}
-  }
-
-  function cerrarModal() {
-    document.getElementById('modalVisitado').classList.remove('show');
-    negocioParaVisitar = null;
-    window._negocioParaVisitar = null;
-} 
-
-  async function guardarVisita() {
-    const negocioParaVisitar = window._negocioParaVisitar;
-    if (!negocioParaVisitar) return;
-    const payload = {
-      nombre: negocioParaVisitar.nombre,
-      direccion: negocioParaVisitar.direccion,
-      resultado: document.getElementById('modalEstado').value,
-      telefono: document.getElementById('modalTelefono').value || null,
-      email: document.getElementById('modalEmail').value || null,
-      horario: document.getElementById('modalHorario').value || null,
-      nivel_operativo: document.getElementById('modalNivel').value || null,
-      tipo_negocio: document.getElementById('modalTipoNegocio').value || null,
-      tiene_rotiseria: document.getElementById('modalRotiseria').checked,
-      tiene_produccion_propia: document.getElementById('modalProduccion').checked,
-      notas: document.getElementById('modalNotas').value || ''
-    };
-    try {
-      const res = await fetch('/marcar-visitado',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
-      if (res.ok) {
-        const btn = document.getElementById(`visitado-${negocioParaVisitar.index}`);
-        if (btn) { btn.classList.add('marcado'); btn.disabled=true; btn.textContent='✅ Visitado'; }
-        cerrarModal();
-        showToast(`✅ ${negocioParaVisitar.nombre} registrado`);
-      }
-      console.log('Status:', res.status);
-      const body = await res.text();
-      console.log('Body:', body);
-    } catch(e) { console.error('Error guardarVisita:', e); showToast('❌ Error al guardar'); }
-  }
-
-  // ── DASHBOARD ─────────────────────────────────────────
-  async function cargarDashboard() {
-    const barrio = document.getElementById('filtroBarrio').value;
-    const estado = document.getElementById('filtroEstado').value;
-    const busqueda = document.getElementById('filtroBusqueda').value.toLowerCase();
-    try {
-      const url = barrio ? `/historial?barrio=${encodeURIComponent(barrio)}` : '/historial';
-      const res = await fetch(url);
-      const data = await res.json();
-      let negocios = data.negocios.filter(n=>n.visitado);
-      if (estado) negocios = negocios.filter(n=>n.resultado===estado);
-      if (busqueda) negocios = negocios.filter(n=>n.nombre.toLowerCase().includes(busqueda));
-
-      const total=negocios.length, clientes=negocios.filter(n=>n.resultado==='cliente').length;
-      const interesados=negocios.filter(n=>n.resultado==='interesado').length;
-      const conversion=total>0?Math.round((clientes/total)*100):0;
-
-      document.getElementById('dashboardStats').innerHTML = [
-        {v:total,l:'Visitados'},{v:clientes,l:'Clientes'},{v:interesados,l:'Interesados'},{v:conversion+'%',l:'Conversión'}
-      ].map(s=>`<div class="stat-card"><div class="stat-value">${s.v}</div><div class="stat-label">${s.l}</div></div>`).join('');
-
-      const lista = document.getElementById('dashboardLista');
-      if (negocios.length===0) {
-        lista.innerHTML=`<div class="empty-state"><div class="empty-state-icon">📋</div><h3>Sin resultados</h3><p>No hay negocios visitados con esos filtros.</p></div>`;
-        return;
-      }
-
-      lista.innerHTML = negocios.map(n => {
-        const nombreEsc = n.nombre.replace(/'/g,"\\'");
-        const dirEsc = (n.direccion||'').replace(/'/g,"\\'");
-        return `
-        <div class="dashboard-card">
-          <div class="dashboard-card-header">
-            <div>
-              <div class="dashboard-card-nombre">${n.nombre}</div>
-              <div class="dashboard-card-dir">📍 ${n.direccion?n.direccion.split(',')[0]:''}</div>
-            </div>
-            <span class="estado-badge estado-${n.resultado||'visitado'}">${(n.resultado||'visitado').replace('_',' ')}</span>
-          </div>
-          <div class="dashboard-detalles">
-            ${n.barrio?`<div class="dashboard-detalle"><div class="dashboard-detalle-label">Barrio</div><div class="dashboard-detalle-valor">${n.barrio}</div></div>`:''}
-            ${n.fecha_ultima_visita?`<div class="dashboard-detalle"><div class="dashboard-detalle-label">Fecha</div><div class="dashboard-detalle-valor">${new Date(n.fecha_ultima_visita).toLocaleDateString('es-UY')}</div></div>`:''}
-            ${n.telefono?`<div class="dashboard-detalle"><div class="dashboard-detalle-label">Teléfono</div><div class="dashboard-detalle-valor"><a href="tel:${n.telefono}" style="color:var(--accent);text-decoration:none;">${n.telefono}</a></div></div>`:''}
-            ${n.tipo_negocio?`<div class="dashboard-detalle"><div class="dashboard-detalle-label">Tipo</div><div class="dashboard-detalle-valor">${n.tipo_negocio}</div></div>`:''}
-            ${n.nivel_operativo?`<div class="dashboard-detalle"><div class="dashboard-detalle-label">Nivel</div><div class="dashboard-detalle-valor">${n.nivel_operativo.replace('_',' ')}</div></div>`:''}
-            ${n.email?`<div class="dashboard-detalle"><div class="dashboard-detalle-label">Email</div><div class="dashboard-detalle-valor">${n.email}</div></div>`:''}
-            <div class="dashboard-detalle"><div class="dashboard-detalle-label">Rotisería propia</div><div class="dashboard-detalle-valor">${n.tiene_rotiseria?'✅ Sí':'❌ No'}</div></div>
-            <div class="dashboard-detalle"><div class="dashboard-detalle-label">Producción propia</div><div class="dashboard-detalle-valor">${n.tiene_produccion_propia?'✅ Sí':'❌ No'}</div></div>
-            ${n.horario?`<div class="dashboard-detalle" style="grid-column:1/-1;"><div class="dashboard-detalle-label">Horario</div><div class="dashboard-detalle-valor">${n.horario}</div></div>`:''}
-            ${n.notas?`<div class="dashboard-detalle" style="grid-column:1/-1;"><div class="dashboard-detalle-label">Notas</div><div class="dashboard-detalle-valor">${n.notas}</div></div>`:''}
-          </div>
-          <div style="display:flex;gap:8px;margin-top:10px;">
-            <select class="dashboard-select-estado" style="flex:1;" onchange="actualizarEstado('${nombreEsc}','${dirEsc}',this.value)">
-              <option value="visitado" ${n.resultado==='visitado'?'selected':''}>Visitado</option>
-              <option value="interesado" ${n.resultado==='interesado'?'selected':''}>Interesado</option>
-              <option value="cliente" ${n.resultado==='cliente'?'selected':''}>Cliente</option>
-              <option value="no_interesado" ${n.resultado==='no_interesado'?'selected':''}>No interesado</option>
-            </select>
-            <button onclick="editarVisitado(${n.id})" style="background:var(--surface2);border:1px solid var(--border);color:var(--text-mid);padding:9px 14px;border-radius:10px;font-size:0.8rem;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;">
-              ✏️ Editar
-            </button>
-          </div>
-        </div>`;
-      }).join('');
-    } catch(e) {
-      document.getElementById('dashboardLista').innerHTML=`<div class="empty-state"><div class="empty-state-icon">❌</div><h3>Error al cargar</h3></div>`;
-    }
-  }
-
-  async function actualizarEstado(nombre, direccion, nuevoEstado) {
-    try {
-      await fetch('/marcar-visitado',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({nombre,direccion,resultado:nuevoEstado})});
-      showToast('✅ Estado actualizado');
-      cargarDashboard();
-    } catch(e) { showToast('❌ Error al actualizar'); }
-  }
-
-  function showToast(msg) {
-    const t=document.getElementById('toast'); t.textContent=msg; t.classList.add('show');
-    setTimeout(()=>t.classList.remove('show'),2500);
-  }
-
-  function mapaNocturno() {
-    return [
-      {elementType:'geometry',stylers:[{color:'#1a1a2e'}]},
-      {elementType:'labels.text.fill',stylers:[{color:'#8ec3b9'}]},
-      {elementType:'labels.text.stroke',stylers:[{color:'#1a3646'}]},
-      {featureType:'road',elementType:'geometry',stylers:[{color:'#2c2c54'}]},
-      {featureType:'road.highway',elementType:'geometry',stylers:[{color:'#3c3c7a'}]},
-      {featureType:'water',elementType:'geometry',stylers:[{color:'#0d1b2a'}]},
-      {featureType:'poi',stylers:[{visibility:'off'}]},
-      {featureType:'transit',stylers:[{visibility:'off'}]},
-    ];
-  }
-
-  cargarBarrios();
-
-  async function editarVisitado(id) {
-    try {
-      const res = await fetch('/historial');
-      const data = await res.json();
-      const n = data.negocios.find(x => x.id === id);
-      if (!n) return;
-
-      // Reusar el modal con datos precargados
-      window._negocioParaVisitar = { nombre: n.nombre, direccion: n.direccion, index: null };
-      document.getElementById('modalNombre').textContent = n.nombre;
-      document.getElementById('modalEstado').value = n.resultado || 'visitado';
-      document.getElementById('modalTelefono').value = n.telefono || '';
-      document.getElementById('modalEmail').value = n.email || '';
-      document.getElementById('modalHorario').value = n.horario || '';
-      document.getElementById('modalTipoNegocio').value = n.tipo_negocio || '';
-      document.getElementById('modalNivel').value = n.nivel_operativo || '';
-      document.getElementById('modalRotiseria').checked = n.tiene_rotiseria || false;
-      document.getElementById('modalProduccion').checked = n.tiene_produccion_propia || false;
-      document.getElementById('modalNotas').value = n.notas || '';
-      document.getElementById('modalVisitado').classList.add('show');
-    } catch(e) {
-      showToast('❌ Error al cargar datos');
-    }
-  }
-</script>
+<!-- JS modules — order matters -->
+<script src="/static/js/state.js"></script>
+<script src="/static/js/utils.js"></script>
+<script src="/static/js/navigation.js"></script>
+<script src="/static/js/mapa.js"></script>
+<script src="/static/js/chat.js"></script>
+<script src="/static/js/visitado.js"></script>
+<script src="/static/js/dashboard.js"></script>
+<script src="/static/js/roadmap.js"></script>
 <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDYHfHRh3mcxWFNK8l3CvTldIWMLPiuJMY"></script>
+<script>
+  window.addEventListener('load', () => cargarBarrios());
+</script>
 </body>
 </html>
