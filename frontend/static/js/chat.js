@@ -234,3 +234,70 @@ function abrirWhatsAppDirecto(telRaw, btn) {
   if (!tel.startsWith('598')) tel = '598' + tel;
   window.open(`https://wa.me/${tel}?text=${encodeURIComponent(mensaje)}`, '_blank');
 }
+
+// ── VOZ ───────────────────────────────────────────────
+let reconocimiento = null;
+let grabando = false;
+
+function toggleVoz() {
+  if (grabando) {
+    detenerVoz();
+  } else {
+    iniciarVoz();
+  }
+}
+
+function iniciarVoz() {
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognition) {
+    showToast('❌ Tu navegador no soporta voz');
+    return;
+  }
+
+  reconocimiento = new SpeechRecognition();
+  reconocimiento.lang = 'es-UY';
+  reconocimiento.continuous = false;
+  reconocimiento.interimResults = true;
+
+  const btn = document.getElementById('btnMic');
+  const input = document.getElementById('chatInput');
+
+  reconocimiento.onstart = () => {
+    grabando = true;
+    btn.classList.add('grabando');
+    btn.textContent = '⏹';
+    input.placeholder = 'Escuchando...';
+  };
+
+  reconocimiento.onresult = (e) => {
+    const texto = Array.from(e.results)
+      .map(r => r[0].transcript)
+      .join('');
+    input.value = texto;
+    autoResize(input);
+  };
+
+  reconocimiento.onend = () => {
+    grabando = false;
+    btn.classList.remove('grabando');
+    btn.textContent = '🎤';
+    input.placeholder = negocioActivo ? 'Preguntá sobre este negocio...' : 'Escribí tu consulta...';
+    // Si hay texto, enviar automáticamente
+    if (input.value.trim()) {
+      setTimeout(() => enviarMensaje(), 300);
+    }
+  };
+
+  reconocimiento.onerror = (e) => {
+    grabando = false;
+    btn.classList.remove('grabando');
+    btn.textContent = '🎤';
+    if (e.error !== 'no-speech') showToast('❌ Error de micrófono: ' + e.error);
+  };
+
+  reconocimiento.start();
+}
+
+function detenerVoz() {
+  if (reconocimiento) reconocimiento.stop();
+}

@@ -123,6 +123,7 @@
         <button class="quick-btn" onclick="quickAction('Generame un recordatorio de pedido')">🔔 Recordatorio</button>
       </div>
       <div class="chat-input-bar" id="chatInputBar" style="display:none;">
+        <button class="btn-mic" id="btnMic" onclick="toggleVoz()">🎤</button>
         <textarea id="chatInput" placeholder="Preguntá sobre este negocio..." rows="1"
           onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
         <button class="btn-send" id="btnSend" onclick="enviarMensaje()">➤</button>
