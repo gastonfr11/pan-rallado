@@ -354,6 +354,8 @@ function exportarPDF() {
     return;
   }
 
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
   const fecha = new Date().toLocaleDateString('es-UY');
   const total = negocios.length;
   const clientes = negocios.filter(n => n.resultado === 'cliente').length;
@@ -361,72 +363,88 @@ function exportarPDF() {
   const noInteresados = negocios.filter(n => n.resultado === 'no_interesado').length;
   const conversion = total > 0 ? Math.round((clientes / total) * 100) : 0;
 
-  const estadoColor = { cliente: '#4dff91', interesado: '#f5a623', no_interesado: '#ff4d4d', visitado: '#888' };
+  // Header
+  doc.setFillColor(245, 166, 35);
+  doc.rect(0, 0, 297, 18, 'F');
+  doc.setTextColor(255, 255, 255);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(14);
+  doc.text('REPORTE DE VISITAS — PAN RALLADO', 14, 12);
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'normal');
+  doc.text(`Generado el ${fecha}`, 240, 12);
+
+  // Stats
+  const stats = [
+    { v: total, l: 'Visitados' },
+    { v: clientes, l: 'Clientes' },
+    { v: interesados, l: 'Interesados' },
+    { v: noInteresados, l: 'No interesados' },
+    { v: conversion + '%', l: 'Conversión' },
+  ];
+  const boxW = 48, boxH = 16, startX = 14, startY = 24;
+  stats.forEach((s, i) => {
+    const x = startX + i * (boxW + 4);
+    doc.setFillColor(248, 248, 248);
+    doc.roundedRect(x, startY, boxW, boxH, 2, 2, 'F');
+    doc.setTextColor(50, 50, 50);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(14);
+    doc.text(String(s.v), x + boxW / 2, startY + 9, { align: 'center' });
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7);
+    doc.setTextColor(130, 130, 130);
+    doc.text(s.l.toUpperCase(), x + boxW / 2, startY + 14, { align: 'center' });
+  });
+
+  // Tabla
   const estadoLabel = { cliente: 'Cliente', interesado: 'Interesado', no_interesado: 'No interesado', visitado: 'Visitado' };
+  const estadoColor = { cliente: [77, 255, 145], interesado: [245, 166, 35], no_interesado: [255, 77, 77], visitado: [150, 150, 150] };
 
-  const filas = negocios.map(n => `
-    <tr>
-      <td>${n.nombre}</td>
-      <td>${n.direccion ? n.direccion.split(',')[0] : '—'}</td>
-      <td>${n.barrio || '—'}</td>
-      <td><span style="color:${estadoColor[n.resultado] || '#888'};font-weight:600;">${estadoLabel[n.resultado] || 'Visitado'}</span></td>
-      <td>${n.telefono || '—'}</td>
-      <td>${n.tipo_negocio || '—'}</td>
-      <td>${n.notas || '—'}</td>
-    </tr>`).join('');
+  doc.autoTable({
+    startY: 46,
+    head: [['Nombre', 'Dirección', 'Barrio', 'Estado', 'Teléfono', 'Tipo', 'Notas']],
+    body: negocios.map(n => [
+      n.nombre,
+      n.direccion ? n.direccion.split(',')[0] : '—',
+      n.barrio || '—',
+      estadoLabel[n.resultado] || 'Visitado',
+      n.telefono || '—',
+      n.tipo_negocio || '—',
+      n.notas || '—',
+    ]),
+    headStyles: { fillColor: [245, 166, 35], textColor: 255, fontStyle: 'bold', fontSize: 8 },
+    bodyStyles: { fontSize: 8, textColor: [50, 50, 50] },
+    alternateRowStyles: { fillColor: [250, 250, 250] },
+    columnStyles: {
+      0: { cellWidth: 45 },
+      1: { cellWidth: 50 },
+      2: { cellWidth: 22 },
+      3: { cellWidth: 24 },
+      4: { cellWidth: 24 },
+      5: { cellWidth: 28 },
+      6: { cellWidth: 'auto' },
+    },
+    didDrawCell: (data) => {
+      if (data.section === 'body' && data.column.index === 3) {
+        const resultado = negocios[data.row.index]?.resultado || 'visitado';
+        const [r, g, b] = estadoColor[resultado] || [150, 150, 150];
+        data.cell.styles.textColor = [r, g, b];
+      }
+    },
+    margin: { left: 14, right: 14 },
+  });
 
-  const html = `<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <title>Reporte de Visitas - ${fecha}</title>
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: Arial, sans-serif; color: #222; padding: 30px; font-size: 12px; }
-    .header { margin-bottom: 24px; border-bottom: 2px solid #f5a623; padding-bottom: 16px; }
-    .header h1 { font-size: 22px; color: #f5a623; letter-spacing: 2px; }
-    .header p { color: #666; margin-top: 4px; }
-    .stats { display: flex; gap: 16px; margin-bottom: 24px; }
-    .stat { flex: 1; background: #f8f8f8; border-radius: 8px; padding: 12px; text-align: center; }
-    .stat-value { font-size: 22px; font-weight: 700; color: #333; }
-    .stat-label { font-size: 10px; color: #888; text-transform: uppercase; margin-top: 2px; }
-    table { width: 100%; border-collapse: collapse; }
-    thead tr { background: #f5a623; color: white; }
-    th { padding: 8px 10px; text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; }
-    td { padding: 8px 10px; border-bottom: 1px solid #eee; vertical-align: top; }
-    tr:nth-child(even) td { background: #fafafa; }
-    .footer { margin-top: 24px; text-align: center; color: #aaa; font-size: 10px; }
-  </style>
-</head>
-<body>
-  <div class="header">
-    <h1>🥖 REPORTE DE VISITAS</h1>
-    <p>Generado el ${fecha} · Pan Rallado Distribuidora · Montevideo</p>
-  </div>
-  <div class="stats">
-    <div class="stat"><div class="stat-value">${total}</div><div class="stat-label">Visitados</div></div>
-    <div class="stat"><div class="stat-value">${clientes}</div><div class="stat-label">Clientes</div></div>
-    <div class="stat"><div class="stat-value">${interesados}</div><div class="stat-label">Interesados</div></div>
-    <div class="stat"><div class="stat-value">${noInteresados}</div><div class="stat-label">No interesados</div></div>
-    <div class="stat"><div class="stat-value">${conversion}%</div><div class="stat-label">Conversión</div></div>
-  </div>
-  <table>
-    <thead>
-      <tr>
-        <th>Nombre</th><th>Dirección</th><th>Barrio</th><th>Estado</th>
-        <th>Teléfono</th><th>Tipo</th><th>Notas</th>
-      </tr>
-    </thead>
-    <tbody>${filas}</tbody>
-  </table>
-  <div class="footer">Pan Rallado · Agente de Ventas · ${fecha}</div>
-</body>
-</html>`;
+  // Footer
+  const pageCount = doc.internal.getNumberOfPages();
+  for (let i = 1; i <= pageCount; i++) {
+    doc.setPage(i);
+    doc.setFontSize(7);
+    doc.setTextColor(180, 180, 180);
+    doc.text(`Pan Rallado · Agente de Ventas · ${fecha} · Página ${i} de ${pageCount}`, 148, 205, { align: 'center' });
+  }
 
-  const ventana = window.open('', '_blank');
-  ventana.document.write(html);
-  ventana.document.close();
-  ventana.onload = () => {
-    ventana.print();
-  };
+  const fechaArchivo = new Date().toLocaleDateString('es-UY').replace(/\//g, '-');
+  doc.save(`reporte-visitas-${fechaArchivo}.pdf`);
+  showToast('✅ PDF descargado');
 }
