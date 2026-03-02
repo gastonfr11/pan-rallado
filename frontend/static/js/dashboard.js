@@ -59,7 +59,10 @@ async function cargarDashboard() {
             <option value="cliente" ${n.resultado === 'cliente' ? 'selected' : ''}>Cliente</option>
             <option value="no_interesado" ${n.resultado === 'no_interesado' ? 'selected' : ''}>No interesado</option>
           </select>
-          ${n.telefono ? `<button data-action="wpp" data-id="${n.id}" style="background:rgba(37,211,102,0.1);border:1px solid rgba(37,211,102,0.3);color:#25d366;padding:9px 14px;border-radius:10px;font-size:0.8rem;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;">📲 WhatsApp</button>` : ''}
+          ${n.telefono ? (esTelefonoMovil(n.telefono)
+            ? `<button data-action="wpp" data-id="${n.id}" style="background:rgba(37,211,102,0.1);border:1px solid rgba(37,211,102,0.3);color:#25d366;padding:9px 14px;border-radius:10px;font-size:0.8rem;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;">📲 WhatsApp</button>`
+            : `<a href="tel:${n.telefono}" style="background:rgba(100,200,255,0.1);border:1px solid rgba(100,200,255,0.3);color:#64c8ff;padding:9px 14px;border-radius:10px;font-size:0.8rem;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;text-decoration:none;display:inline-flex;align-items:center;">📞 Llamar</a>`
+          ) : ''}
           <button data-action="chat" data-id="${n.id}" style="background:var(--accent-dim);border:1px solid rgba(245,166,35,0.3);color:var(--accent);padding:9px 14px;border-radius:10px;font-size:0.8rem;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;">💬 Chat</button>
           <button data-action="editar" data-id="${n.id}" style="background:var(--surface2);border:1px solid var(--border);color:var(--text-mid);padding:9px 14px;border-radius:10px;font-size:0.8rem;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;">✏️ Editar</button>
           <button data-action="desmarcar" data-id="${n.id}" style="background:rgba(255,77,77,0.08);border:1px solid rgba(255,77,77,0.25);color:#ff4d4d;padding:9px 14px;border-radius:10px;font-size:0.8rem;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;">🗑️</button>
@@ -295,4 +298,11 @@ function formatearHorario(horario) {
     const rango = g.hasta ? `${g.desde} a ${g.hasta}` : g.desde;
     return `<div style="margin-bottom:2px;"><span style="color:var(--text);">${rango}:</span> ${g.horas}</div>`;
   }).join('');
+}
+
+function esTelefonoMovil(tel) {
+  if (!tel) return false;
+  const limpio = tel.replace(/[\s\-\(\)]/g, '');
+  // Uruguay: móviles empiezan con 09 o +5989
+  return /^(09|(\+?598)?9)/.test(limpio);
 }
