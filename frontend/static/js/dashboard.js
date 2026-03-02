@@ -306,3 +306,127 @@ function esTelefonoMovil(tel) {
   // Uruguay: móviles empiezan con 09 o +5989
   return /^(09|(\+?598)?9)/.test(limpio);
 }
+
+// ── EXPORTAR ──────────────────────────────────────────
+function exportarExcel() {
+  const negocios = window._dashboardNegocios;
+  if (!negocios || negocios.length === 0) {
+    showToast('❌ No hay datos para exportar');
+    return;
+  }
+
+  const fecha = new Date().toLocaleDateString('es-UY').replace(/\//g, '-');
+
+  const filas = negocios.map(n => ({
+    'Nombre': n.nombre,
+    'Dirección': n.direccion || '—',
+    'Barrio': n.barrio || '—',
+    'Estado': (n.resultado || 'visitado').replace('_', ' '),
+    'Teléfono': n.telefono || '—',
+    'Email': n.email || '—',
+    'Tipo de negocio': n.tipo_negocio || '—',
+    'Nivel operativo': n.nivel_operativo ? n.nivel_operativo.replace('_', ' ') : '—',
+    'Rotisería propia': n.tiene_rotiseria ? 'Sí' : 'No',
+    'Producción propia': n.tiene_produccion_propia ? 'Sí' : 'No',
+    'Notas': n.notas || '—',
+    'Fecha visita': n.fecha_ultima_visita ? new Date(n.fecha_ultima_visita).toLocaleDateString('es-UY') : '—',
+  }));
+
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.json_to_sheet(filas);
+
+  // Ancho de columnas
+  ws['!cols'] = [
+    { wch: 30 }, { wch: 35 }, { wch: 15 }, { wch: 14 },
+    { wch: 14 }, { wch: 25 }, { wch: 18 }, { wch: 16 },
+    { wch: 14 }, { wch: 16 }, { wch: 40 }, { wch: 14 },
+  ];
+
+  XLSX.utils.book_append_sheet(wb, ws, 'Visitas');
+  XLSX.writeFile(wb, `reporte-visitas-${fecha}.xlsx`);
+  showToast('✅ Excel descargado');
+}
+
+function exportarPDF() {
+  const negocios = window._dashboardNegocios;
+  if (!negocios || negocios.length === 0) {
+    showToast('❌ No hay datos para exportar');
+    return;
+  }
+
+  const fecha = new Date().toLocaleDateString('es-UY');
+  const total = negocios.length;
+  const clientes = negocios.filter(n => n.resultado === 'cliente').length;
+  const interesados = negocios.filter(n => n.resultado === 'interesado').length;
+  const noInteresados = negocios.filter(n => n.resultado === 'no_interesado').length;
+  const conversion = total > 0 ? Math.round((clientes / total) * 100) : 0;
+
+  const estadoColor = { cliente: '#4dff91', interesado: '#f5a623', no_interesado: '#ff4d4d', visitado: '#888' };
+  const estadoLabel = { cliente: 'Cliente', interesado: 'Interesado', no_interesado: 'No interesado', visitado: 'Visitado' };
+
+  const filas = negocios.map(n => `
+    <tr>
+      <td>${n.nombre}</td>
+      <td>${n.direccion ? n.direccion.split(',')[0] : '—'}</td>
+      <td>${n.barrio || '—'}</td>
+      <td><span style="color:${estadoColor[n.resultado] || '#888'};font-weight:600;">${estadoLabel[n.resultado] || 'Visitado'}</span></td>
+      <td>${n.telefono || '—'}</td>
+      <td>${n.tipo_negocio || '—'}</td>
+      <td>${n.notas || '—'}</td>
+    </tr>`).join('');
+
+  const html = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Reporte de Visitas - ${fecha}</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: Arial, sans-serif; color: #222; padding: 30px; font-size: 12px; }
+    .header { margin-bottom: 24px; border-bottom: 2px solid #f5a623; padding-bottom: 16px; }
+    .header h1 { font-size: 22px; color: #f5a623; letter-spacing: 2px; }
+    .header p { color: #666; margin-top: 4px; }
+    .stats { display: flex; gap: 16px; margin-bottom: 24px; }
+    .stat { flex: 1; background: #f8f8f8; border-radius: 8px; padding: 12px; text-align: center; }
+    .stat-value { font-size: 22px; font-weight: 700; color: #333; }
+    .stat-label { font-size: 10px; color: #888; text-transform: uppercase; margin-top: 2px; }
+    table { width: 100%; border-collapse: collapse; }
+    thead tr { background: #f5a623; color: white; }
+    th { padding: 8px 10px; text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; }
+    td { padding: 8px 10px; border-bottom: 1px solid #eee; vertical-align: top; }
+    tr:nth-child(even) td { background: #fafafa; }
+    .footer { margin-top: 24px; text-align: center; color: #aaa; font-size: 10px; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>🥖 REPORTE DE VISITAS</h1>
+    <p>Generado el ${fecha} · Pan Rallado Distribuidora · Montevideo</p>
+  </div>
+  <div class="stats">
+    <div class="stat"><div class="stat-value">${total}</div><div class="stat-label">Visitados</div></div>
+    <div class="stat"><div class="stat-value">${clientes}</div><div class="stat-label">Clientes</div></div>
+    <div class="stat"><div class="stat-value">${interesados}</div><div class="stat-label">Interesados</div></div>
+    <div class="stat"><div class="stat-value">${noInteresados}</div><div class="stat-label">No interesados</div></div>
+    <div class="stat"><div class="stat-value">${conversion}%</div><div class="stat-label">Conversión</div></div>
+  </div>
+  <table>
+    <thead>
+      <tr>
+        <th>Nombre</th><th>Dirección</th><th>Barrio</th><th>Estado</th>
+        <th>Teléfono</th><th>Tipo</th><th>Notas</th>
+      </tr>
+    </thead>
+    <tbody>${filas}</tbody>
+  </table>
+  <div class="footer">Pan Rallado · Agente de Ventas · ${fecha}</div>
+</body>
+</html>`;
+
+  const ventana = window.open('', '_blank');
+  ventana.document.write(html);
+  ventana.document.close();
+  ventana.onload = () => {
+    ventana.print();
+  };
+}
