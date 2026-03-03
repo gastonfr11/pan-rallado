@@ -5,3 +5,4 @@ __pycache__/
 test_claude.py
 test_groq.py
 test_places.py
+everything-claude-code/
