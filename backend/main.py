@@ -151,8 +151,8 @@ def buscar_negocios(barrio: str, modo: str = "chico") -> list:
         query, location, radius = args
         return gmaps.places(query=query, location=location, radius=radius, language="es")
 
-    # Llamadas a Google Maps en paralelo
-    with ThreadPoolExecutor(max_workers=5) as executor:
+    # Llamadas a Google Maps en paralelo — una por categoría
+    with ThreadPoolExecutor(max_workers=len(queries)) as executor:
         resultados = list(executor.map(_fetch, queries))
 
     todos = []
