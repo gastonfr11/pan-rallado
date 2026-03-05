@@ -71,14 +71,15 @@ function iniciarMapa(negocios) {
   bounds.extend(distribuidora);
   mapa.fitBounds(bounds);
 
-  // Ruta por calles
-  const ds = new google.maps.DirectionsService();
-  const dr = new google.maps.DirectionsRenderer({
+  // Limpiar ruta anterior si existe
+  if (directionsRenderer) directionsRenderer.setMap(null);
+  directionsRenderer = new google.maps.DirectionsRenderer({
     map: mapa,
     suppressMarkers: true,
     polylineOptions: { strokeColor: '#f5a623', strokeOpacity: 0.6, strokeWeight: 4 }
   });
 
+  const ds = new google.maps.DirectionsService();
   ds.route({
     origin: distribuidora,
     destination: distribuidora,
@@ -87,7 +88,7 @@ function iniciarMapa(negocios) {
     travelMode: google.maps.TravelMode.DRIVING,
   }, (result, status) => {
     if (status === 'OK') {
-      dr.setDirections(result);
+      directionsRenderer.setDirections(result);
       mapa.fitBounds(bounds);
     }
   });

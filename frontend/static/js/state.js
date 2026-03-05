@@ -2,6 +2,7 @@
 let mapa = null;
 let markers = [];
 let infoWindows = [];
+let directionsRenderer = null;
 let negociosData = [];
 let negocioActivo = null;
 let historialChat = [];
