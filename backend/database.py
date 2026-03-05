@@ -34,12 +34,7 @@ def init_db():
             id SERIAL PRIMARY KEY,
             negocio_id INTEGER NOT NULL REFERENCES negocios(id) ON DELETE CASCADE,
             fecha TIMESTAMP NOT NULL,
-            resultado TEXT,
-            notas TEXT,
-            tipo_negocio TEXT,
-            nivel_operativo TEXT,
-            tiene_rotiseria BOOLEAN DEFAULT FALSE,
-            tiene_produccion_propia BOOLEAN DEFAULT FALSE
+            notas TEXT
         )
     """)
     conn.commit()
@@ -109,14 +104,10 @@ def marcar_visitado(nombre: str, direccion: str, resultado: str = "visitado", no
         cursor.execute("SELECT id FROM negocios WHERE nombre = %s AND direccion = %s", (nombre, direccion))
         row = cursor.fetchone()
         if row:
-            cursor.execute("""
-                INSERT INTO visitas (negocio_id, fecha, resultado, notas, tipo_negocio, nivel_operativo, tiene_rotiseria, tiene_produccion_propia)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
-            """, (
-                row[0], ahora, resultado, notas or None,
-                tipo_negocio, nivel_operativo,
-                tiene_rotiseria, tiene_produccion_propia
-            ))
+            cursor.execute(
+                "INSERT INTO visitas (negocio_id, fecha, notas) VALUES (%s, %s, %s)",
+                (row[0], ahora, notas or None)
+            )
 
         conn.commit()
     finally:

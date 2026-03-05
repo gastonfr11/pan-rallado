@@ -347,9 +347,6 @@ async function abrirHistorialVisitas(id) {
     const data = await res.json();
     const visitas = data.visitas;
 
-    const colores = { cliente: '#4dff91', interesado: '#f5a623', no_interesado: '#ff4d4d', visitado: '#999' };
-    const etiquetas = { cliente: 'Cliente', interesado: 'Interesado', no_interesado: 'No interesado', visitado: 'Visitado' };
-
     if (visitas.length === 0) {
       document.getElementById('historialLista').innerHTML = `<div style="color:var(--text-mid);font-size:0.85rem;text-align:center;padding:16px 0;">Sin visitas registradas aún.<br><span style="font-size:0.75rem;">Las visitas se guardan a partir de ahora.</span></div>`;
       return;
@@ -357,15 +354,12 @@ async function abrirHistorialVisitas(id) {
 
     document.getElementById('historialLista').innerHTML = visitas.map((v, i) => {
       const fecha = v.fecha ? new Date(v.fecha).toLocaleDateString('es-UY', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—';
-      const color = colores[v.resultado] || '#999';
-      const etiqueta = etiquetas[v.resultado] || v.resultado || '—';
       return `
         <div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:12px 14px;display:flex;flex-direction:column;gap:6px;">
-          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
-            <span style="font-size:0.8rem;color:var(--text-mid);">${i === 0 ? '🔵 Última · ' : ''}${fecha}</span>
-            <span style="color:${color};font-size:0.8rem;font-weight:600;white-space:nowrap;">${etiqueta}</span>
-          </div>
-          ${v.notas ? `<div style="font-size:0.82rem;color:var(--text);line-height:1.4;">${_esc(v.notas)}</div>` : ''}
+          <span style="font-size:0.78rem;color:var(--text-mid);">${i === 0 ? '🔵 Última visita · ' : ''}${fecha}</span>
+          ${v.notas
+            ? `<div style="font-size:0.85rem;color:var(--text);line-height:1.5;">${_esc(v.notas)}</div>`
+            : `<div style="font-size:0.82rem;color:var(--text-mid);font-style:italic;">Sin nota</div>`}
         </div>`;
     }).join('');
   } catch(e) {
