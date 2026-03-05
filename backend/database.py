@@ -29,6 +29,19 @@ def init_db():
             notas TEXT
         )
     """)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS visitas (
+            id SERIAL PRIMARY KEY,
+            negocio_id INTEGER NOT NULL REFERENCES negocios(id) ON DELETE CASCADE,
+            fecha TIMESTAMP NOT NULL,
+            resultado TEXT,
+            notas TEXT,
+            tipo_negocio TEXT,
+            nivel_operativo TEXT,
+            tiene_rotiseria BOOLEAN DEFAULT FALSE,
+            tiene_produccion_propia BOOLEAN DEFAULT FALSE
+        )
+    """)
     conn.commit()
     cursor.close()
     conn.close()
@@ -62,38 +75,53 @@ def marcar_visitado(nombre: str, direccion: str, resultado: str = "visitado", no
                     tiene_rotiseria: bool = False, tiene_produccion_propia: bool = False):
     conn = get_conn()
     cursor = conn.cursor()
-    ahora = datetime.now()
+    try:
+        ahora = datetime.now()
 
-    # Construir update dinámico — solo pisa campos que vienen con valor
-    fields = ["visitado = TRUE", "fecha_ultima_visita = %s", "resultado = %s"]
-    values = [ahora, resultado]
+        # Construir update dinámico — solo pisa campos que vienen con valor
+        fields = ["visitado = TRUE", "fecha_ultima_visita = %s", "resultado = %s"]
+        values = [ahora, resultado]
 
-    if notas:
-        fields.append("notas = %s"); values.append(notas)
-    if telefono is not None:
-        fields.append("telefono = %s"); values.append(telefono)
-    if email is not None:
-        fields.append("email = %s"); values.append(email)
-    if horario is not None:
-        fields.append("horario = %s"); values.append(horario)
-    if tipo_negocio is not None:
-        fields.append("tipo_negocio = %s"); values.append(tipo_negocio)
-    if nivel_operativo is not None:
-        fields.append("nivel_operativo = %s"); values.append(nivel_operativo)
-    if tiene_rotiseria:
-        fields.append("tiene_rotiseria = %s"); values.append(tiene_rotiseria)
-    if tiene_produccion_propia:
-        fields.append("tiene_produccion_propia = %s"); values.append(tiene_produccion_propia)
+        if notas:
+            fields.append("notas = %s"); values.append(notas)
+        if telefono is not None:
+            fields.append("telefono = %s"); values.append(telefono)
+        if email is not None:
+            fields.append("email = %s"); values.append(email)
+        if horario is not None:
+            fields.append("horario = %s"); values.append(horario)
+        if tipo_negocio is not None:
+            fields.append("tipo_negocio = %s"); values.append(tipo_negocio)
+        if nivel_operativo is not None:
+            fields.append("nivel_operativo = %s"); values.append(nivel_operativo)
+        if tiene_rotiseria:
+            fields.append("tiene_rotiseria = %s"); values.append(tiene_rotiseria)
+        if tiene_produccion_propia:
+            fields.append("tiene_produccion_propia = %s"); values.append(tiene_produccion_propia)
 
-    values.extend([nombre, direccion])
-    cursor.execute(f"""
-        UPDATE negocios SET {', '.join(fields)}
-        WHERE nombre = %s AND direccion = %s
-    """, values)
+        values.extend([nombre, direccion])
+        cursor.execute(f"""
+            UPDATE negocios SET {', '.join(fields)}
+            WHERE nombre = %s AND direccion = %s
+        """, values)
 
-    conn.commit()
-    cursor.close()
-    conn.close()
+        # Guardar la visita en el historial
+        cursor.execute("SELECT id FROM negocios WHERE nombre = %s AND direccion = %s", (nombre, direccion))
+        row = cursor.fetchone()
+        if row:
+            cursor.execute("""
+                INSERT INTO visitas (negocio_id, fecha, resultado, notas, tipo_negocio, nivel_operativo, tiene_rotiseria, tiene_produccion_propia)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+            """, (
+                row[0], ahora, resultado, notas or None,
+                tipo_negocio, nivel_operativo,
+                tiene_rotiseria, tiene_produccion_propia
+            ))
+
+        conn.commit()
+    finally:
+        cursor.close()
+        conn.close()
 
 def fue_visitado(nombre: str, direccion: str) -> bool:
     """Devuelve True solo si el vendedor marcó el negocio como visitado."""
@@ -124,6 +152,18 @@ def obtener_historial(barrio: str = None) -> list:
     else:
         cursor.execute("SELECT * FROM negocios ORDER BY fecha_ultima_visita DESC")
 
+    rows = cursor.fetchall()
+    cursor.close()
+    conn.close()
+    return [dict(r) for r in rows]
+
+def obtener_visitas(negocio_id: int) -> list:
+    conn = get_conn()
+    cursor = conn.cursor(cursor_factory=RealDictCursor)
+    cursor.execute(
+        "SELECT * FROM visitas WHERE negocio_id = %s ORDER BY fecha DESC",
+        (negocio_id,)
+    )
     rows = cursor.fetchall()
     cursor.close()
     conn.close()

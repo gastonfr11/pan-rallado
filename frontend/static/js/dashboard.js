@@ -109,6 +109,7 @@ async function cargarDashboard() {
             : `<a href="tel:${n.telefono}" style="background:rgba(100,200,255,0.1);border:1px solid rgba(100,200,255,0.3);color:#64c8ff;padding:9px 14px;border-radius:10px;font-size:0.8rem;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;text-decoration:none;display:inline-flex;align-items:center;">📞 Llamar</a>`
           ) : ''}
           <button data-action="chat" data-id="${n.id}" style="background:var(--accent-dim);border:1px solid rgba(245,166,35,0.3);color:var(--accent);padding:9px 14px;border-radius:10px;font-size:0.8rem;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;">💬 Chat</button>
+          <button data-action="historial" data-id="${n.id}" style="background:rgba(120,120,255,0.08);border:1px solid rgba(120,120,255,0.25);color:#9090ff;padding:9px 14px;border-radius:10px;font-size:0.8rem;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;">📅 Historial</button>
           <button data-action="editar" data-id="${n.id}" style="background:var(--surface2);border:1px solid var(--border);color:var(--text-mid);padding:9px 14px;border-radius:10px;font-size:0.8rem;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;">✏️ Editar</button>
           <button data-action="desmarcar" data-id="${n.id}" style="background:rgba(255,77,77,0.08);border:1px solid rgba(255,77,77,0.25);color:#ff4d4d;padding:9px 14px;border-radius:10px;font-size:0.8rem;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;">🗑️</button>
         </div>
@@ -130,6 +131,7 @@ async function cargarDashboard() {
       const id = parseInt(btn.dataset.id);
       const accion = btn.dataset.action;
       if (accion === 'chat') chatDesdeHistorial(id);
+      if (accion === 'historial') abrirHistorialVisitas(id);
       if (accion === 'editar') editarVisitado(id);
       if (accion === 'desmarcar') desmarcarVisitado(id);
       if (accion === 'wpp') abrirModalWpp(id);
@@ -304,6 +306,71 @@ function abrirWhatsApp() {
   const url = `https://wa.me/${tel}?text=${encodeURIComponent(mensaje)}`;
   window.open(url, '_blank');
   cerrarModalWpp();
+}
+
+// ── HISTORIAL DE VISITAS ──────────────────────────────
+function _esc(s) {
+  if (!s) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+async function abrirHistorialVisitas(id) {
+  const n = window._dashboardNegocios?.find(x => x.id === id);
+  if (!n) return;
+
+  let modal = document.getElementById('modalHistorial');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'modalHistorial';
+    modal.style.cssText = 'display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);backdrop-filter:blur(4px);z-index:300;overflow-y:auto;padding:20px 16px;';
+    modal.innerHTML = `
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:20px;width:100%;max-width:480px;margin:auto;display:flex;flex-direction:column;gap:14px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;">
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:1.1rem;color:#9090ff;letter-spacing:1.5px;">📅 HISTORIAL</div>
+          <button id="btnHistorialCerrar" style="background:var(--surface2);border:1px solid var(--border);color:var(--text-mid);padding:5px 12px;border-radius:8px;font-size:0.8rem;cursor:pointer;font-family:'DM Sans',sans-serif;">✕ Cerrar</button>
+        </div>
+        <div id="historialNombre" style="font-size:0.95rem;font-weight:600;color:var(--text);padding-bottom:12px;border-bottom:1px solid var(--border);"></div>
+        <div id="historialLista" style="display:flex;flex-direction:column;gap:10px;"></div>
+      </div>`;
+    document.body.appendChild(modal);
+    document.getElementById('btnHistorialCerrar').onclick = () => { modal.style.display = 'none'; };
+  }
+
+  document.getElementById('historialNombre').textContent = n.nombre;
+  document.getElementById('historialLista').innerHTML = '<div style="color:var(--text-mid);font-size:0.85rem;">Cargando...</div>';
+  modal.style.display = 'flex';
+  modal.style.alignItems = 'flex-start';
+  modal.style.justifyContent = 'center';
+
+  try {
+    const res = await fetch(`/visitas?negocio_id=${id}`);
+    const data = await res.json();
+    const visitas = data.visitas;
+
+    const colores = { cliente: '#4dff91', interesado: '#f5a623', no_interesado: '#ff4d4d', visitado: '#999' };
+    const etiquetas = { cliente: 'Cliente', interesado: 'Interesado', no_interesado: 'No interesado', visitado: 'Visitado' };
+
+    if (visitas.length === 0) {
+      document.getElementById('historialLista').innerHTML = `<div style="color:var(--text-mid);font-size:0.85rem;text-align:center;padding:16px 0;">Sin visitas registradas aún.<br><span style="font-size:0.75rem;">Las visitas se guardan a partir de ahora.</span></div>`;
+      return;
+    }
+
+    document.getElementById('historialLista').innerHTML = visitas.map((v, i) => {
+      const fecha = v.fecha ? new Date(v.fecha).toLocaleDateString('es-UY', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—';
+      const color = colores[v.resultado] || '#999';
+      const etiqueta = etiquetas[v.resultado] || v.resultado || '—';
+      return `
+        <div style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:12px 14px;display:flex;flex-direction:column;gap:6px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+            <span style="font-size:0.8rem;color:var(--text-mid);">${i === 0 ? '🔵 Última · ' : ''}${fecha}</span>
+            <span style="color:${color};font-size:0.8rem;font-weight:600;white-space:nowrap;">${etiqueta}</span>
+          </div>
+          ${v.notas ? `<div style="font-size:0.82rem;color:var(--text);line-height:1.4;">${_esc(v.notas)}</div>` : ''}
+        </div>`;
+    }).join('');
+  } catch(e) {
+    document.getElementById('historialLista').innerHTML = '<div style="color:#ff4d4d;font-size:0.85rem;">Error al cargar historial.</div>';
+  }
 }
 
 function formatearHorario(horario) {

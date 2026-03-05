@@ -348,6 +348,11 @@ def place_details(nombre: str, direccion: str):
     except Exception:
         return {"telefono": None, "horario": None}
 
+@app.get("/visitas")
+def get_visitas(negocio_id: int):
+    from database import obtener_visitas
+    return {"visitas": obtener_visitas(negocio_id)}
+
 @app.post("/desmarcar-visitado")
 def desmarcar_visitado_endpoint(req: DesmarcarVisitadoRequest):
     from database import desmarcar_visitado as db_desmarcar
