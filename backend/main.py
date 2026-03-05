@@ -12,6 +12,18 @@ init_db()
 
 gmaps = googlemaps.Client(key=os.getenv("GOOGLE_MAPS_API_KEY"))
 
+# Barrios dentro del departamento de Montevideo
+BARRIOS_MONTEVIDEO = [
+    "Todo Montevideo",
+    "Pocitos", "Punta Carretas", "Parque Rodó", "Palermo", "Cordón",
+    "Centro", "Aguada", "Prado", "Buceo", "Malvín", "Carrasco",
+    "Ciudad Vieja", "Sayago", "Tres Cruces", "La Blanqueada",
+    "Unión", "Cerrito", "Zona Industrial Norte", "Zona Franca",
+    "Parque Industrial", "Piedras Blancas", "Flor de Maroñas",
+    "Bella Italia", "Camino Maldonado", "Ituzaingó", "Las Canteras",
+    "Malvín Norte",
+]
+
 # Coordenadas centro + radio en metros por barrio
 BARRIOS = {
     "Todo Montevideo":      {"lat": -34.9011, "lng": -56.1645, "radio": 15000},
@@ -140,16 +152,7 @@ def buscar_negocios(barrio: str, modo: str = "chico") -> list:
 
     for categoria in categorias:
         # Localidades fuera de Montevideo no llevan ", Montevideo" en el query
-        barrios_montevideo = [
-            "Pocitos", "Punta Carretas", "Parque Rodó", "Palermo", "Cordón",
-            "Centro", "Aguada", "Prado", "Buceo", "Malvín", "Carrasco",
-            "Ciudad Vieja", "Sayago", "Tres Cruces", "La Blanqueada",
-            "Unión", "Cerrito", "Zona Industrial Norte", "Zona Franca",
-            "Parque Industrial", "Piedras Blancas", "Flor de Maroñas",
-            "Bella Italia", "Camino Maldonado", "Ituzaingó", "Las Canteras",
-            "Malvín Norte"
-        ]
-        sufijo = ", Montevideo" if barrio in barrios_montevideo else ", Uruguay"
+        sufijo = ", Montevideo" if barrio in BARRIOS_MONTEVIDEO else ", Uruguay"
         resultado = gmaps.places(
             query=f"{categoria} en {barrio}{sufijo}",
             location=(info["lat"], info["lng"]),

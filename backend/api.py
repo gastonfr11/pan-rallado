@@ -317,7 +317,9 @@ def marcar_visitado_endpoint(req: MarcarVisitadoRequest):
 
 @app.get("/historial")
 def get_historial(barrio: str = None):
-    from database import obtener_historial
+    from database import obtener_historial, obtener_historial_zona
+    if barrio == "Todo Montevideo":
+        return {"negocios": obtener_historial_zona(main.BARRIOS_MONTEVIDEO)}
     return {"negocios": obtener_historial(barrio)}
 
 @app.post("/resetear-db")
