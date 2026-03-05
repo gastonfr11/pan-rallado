@@ -35,7 +35,7 @@ BARRIOS = {
     "Cordón":               {"lat": -34.9010, "lng": -56.1720, "radio": 900},
     "Centro":               {"lat": -34.9060, "lng": -56.1880, "radio": 1000},
     "Aguada":               {"lat": -34.8960, "lng": -56.1830, "radio": 800},
-    "Prado":                {"lat": -34.8780, "lng": -56.1920, "radio": 1200},
+    "Prado":                {"lat": -34.8690, "lng": -56.2010, "radio": 1000},
     "Buceo":                {"lat": -34.8980, "lng": -56.1350, "radio": 1000},
     "Malvín":               {"lat": -34.8900, "lng": -56.1150, "radio": 1200},
     "Carrasco":             {"lat": -34.8720, "lng": -56.0650, "radio": 1500},
