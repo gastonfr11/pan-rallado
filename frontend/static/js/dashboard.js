@@ -1,8 +1,23 @@
 // ── DASHBOARD ─────────────────────────────────────────
+function onFiltroFechaChange() {
+  const v = document.getElementById('filtroFecha').value;
+  document.getElementById('filtroFechaEspecificaWrap').style.display = v === 'especifica' ? 'block' : 'none';
+  cargarDashboard();
+}
+
+function _fechaSoloFecha(isoStr) {
+  // Devuelve string "YYYY-MM-DD" en hora local a partir de un ISO string
+  if (!isoStr) return null;
+  const d = new Date(isoStr);
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
 async function cargarDashboard() {
   const barrio = document.getElementById('filtroBarrio').value;
   const estado = document.getElementById('filtroEstado').value;
   const busqueda = document.getElementById('filtroBusqueda').value.toLowerCase();
+  const filtroFecha = document.getElementById('filtroFecha').value;
+  const fechaEspecifica = document.getElementById('filtroFechaEspecifica').value; // "YYYY-MM-DD"
 
   try {
     const url = barrio ? `/historial?barrio=${encodeURIComponent(barrio)}` : '/historial';
@@ -12,6 +27,36 @@ async function cargarDashboard() {
     let negocios = data.negocios.filter(n => n.visitado);
     if (estado) negocios = negocios.filter(n => n.resultado === estado);
     if (busqueda) negocios = negocios.filter(n => n.nombre.toLowerCase().includes(busqueda));
+
+    if (filtroFecha) {
+      const hoy = new Date();
+      const hoyStr = `${hoy.getFullYear()}-${String(hoy.getMonth()+1).padStart(2,'0')}-${String(hoy.getDate()).padStart(2,'0')}`;
+
+      if (filtroFecha === 'hoy') {
+        negocios = negocios.filter(n => _fechaSoloFecha(n.fecha_ultima_visita) === hoyStr);
+      } else if (filtroFecha === 'semana') {
+        // Lunes de la semana actual
+        const lunes = new Date(hoy);
+        lunes.setDate(hoy.getDate() - ((hoy.getDay() + 6) % 7));
+        lunes.setHours(0, 0, 0, 0);
+        const domingo = new Date(lunes);
+        domingo.setDate(lunes.getDate() + 6);
+        domingo.setHours(23, 59, 59, 999);
+        negocios = negocios.filter(n => {
+          if (!n.fecha_ultima_visita) return false;
+          const d = new Date(n.fecha_ultima_visita);
+          return d >= lunes && d <= domingo;
+        });
+      } else if (filtroFecha === 'mes') {
+        negocios = negocios.filter(n => {
+          if (!n.fecha_ultima_visita) return false;
+          const d = new Date(n.fecha_ultima_visita);
+          return d.getFullYear() === hoy.getFullYear() && d.getMonth() === hoy.getMonth();
+        });
+      } else if (filtroFecha === 'especifica' && fechaEspecifica) {
+        negocios = negocios.filter(n => _fechaSoloFecha(n.fecha_ultima_visita) === fechaEspecifica);
+      }
+    }
 
     const total = negocios.length;
     const clientes = negocios.filter(n => n.resultado === 'cliente').length;
