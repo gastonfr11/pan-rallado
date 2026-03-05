@@ -1,9 +1,10 @@
 # backend/main.py
 import googlemaps
 import os
+from concurrent.futures import ThreadPoolExecutor
 from dotenv import load_dotenv
 from scorer import score_negocios
-from database import init_db, fue_visitado, registrar_negocio
+from database import init_db, registrar_negocio, obtener_visitados_set
 from router import optimizar_ruta
 from notifier import enviar_roadmap_whatsapp
 
@@ -124,45 +125,45 @@ def es_direccion_valida(lugar: dict) -> bool:
 
 def buscar_negocios(barrio: str, modo: str = "chico") -> list:
     categorias = CATEGORIAS_GRANDE if modo == "grande" else CATEGORIAS_CHICO
+
+    # Una sola query a la DB para todos los visitados
+    visitados = obtener_visitados_set()
+
+    if barrio == "Todo Montevideo":
+        info = {"lat": -34.9011, "lng": -56.1645, "radio": 15000}
+        queries = [
+            (f"{c} en Montevideo", (info["lat"], info["lng"]), info["radio"])
+            for c in categorias
+        ]
+        en_barrio_fn = lambda lugar: True
+    else:
+        info = BARRIOS.get(barrio)
+        if not info:
+            return []
+        sufijo = ", Montevideo" if barrio in BARRIOS_MONTEVIDEO else ", Uruguay"
+        queries = [
+            (f"{c} en {barrio}{sufijo}", (info["lat"], info["lng"]), info["radio"])
+            for c in categorias
+        ]
+        en_barrio_fn = lambda lugar: esta_en_barrio(lugar, info)
+
+    def _fetch(args):
+        query, location, radius = args
+        return gmaps.places(query=query, location=location, radius=radius, language="es")
+
+    # Llamadas a Google Maps en paralelo
+    with ThreadPoolExecutor(max_workers=5) as executor:
+        resultados = list(executor.map(_fetch, queries))
+
     todos = []
     vistos = set()
-
-    # Montevideo completo — sin filtro de distancia
-    if barrio == "Todo Montevideo":
-        info_mvd = {"lat": -34.9011, "lng": -56.1645, "radio": 15000}
-        for categoria in categorias:
-            resultado = gmaps.places(
-                query=f"{categoria} en Montevideo",
-                location=(info_mvd["lat"], info_mvd["lng"]),
-                radius=info_mvd["radio"],
-                language="es"
-            )
-            for lugar in resultado["results"]:
-                if lugar["name"] not in vistos and es_direccion_valida(lugar):
-                    if not fue_visitado(lugar["name"], lugar.get("formatted_address", "")):
-                        vistos.add(lugar["name"])
-                        lugar["_modo"] = modo
-                        todos.append(lugar)
-        return todos
-
-    # Búsqueda por barrio específico
-    info = BARRIOS.get(barrio)
-    if not info:
-        return []
-
-    for categoria in categorias:
-        # Localidades fuera de Montevideo no llevan ", Montevideo" en el query
-        sufijo = ", Montevideo" if barrio in BARRIOS_MONTEVIDEO else ", Uruguay"
-        resultado = gmaps.places(
-            query=f"{categoria} en {barrio}{sufijo}",
-            location=(info["lat"], info["lng"]),
-            radius=info["radio"],
-            language="es"
-        )
+    for resultado in resultados:
         for lugar in resultado["results"]:
-            if lugar["name"] not in vistos and es_direccion_valida(lugar) and esta_en_barrio(lugar, info):
-                if not fue_visitado(lugar["name"], lugar.get("formatted_address", "")):
-                    vistos.add(lugar["name"])
+            nombre = lugar["name"]
+            direccion = lugar.get("formatted_address", "")
+            if nombre not in vistos and es_direccion_valida(lugar) and en_barrio_fn(lugar):
+                if (nombre, direccion) not in visitados:
+                    vistos.add(nombre)
                     lugar["_modo"] = modo
                     todos.append(lugar)
 

@@ -148,6 +148,16 @@ def obtener_historial(barrio: str = None) -> list:
     conn.close()
     return [dict(r) for r in rows]
 
+def obtener_visitados_set() -> set:
+    """Devuelve un set de (nombre, direccion) de todos los negocios ya visitados — una sola query."""
+    conn = get_conn()
+    cursor = conn.cursor()
+    cursor.execute("SELECT nombre, direccion FROM negocios WHERE visitado = TRUE")
+    rows = cursor.fetchall()
+    cursor.close()
+    conn.close()
+    return {(r[0], r[1]) for r in rows}
+
 def obtener_historial_zona(barrios: list) -> list:
     """Devuelve negocios cuyo barrio esté dentro de la lista dada (ej: todos los de Montevideo)."""
     conn = get_conn()
