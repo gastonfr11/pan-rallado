@@ -347,9 +347,9 @@ El vendedor busca nuevos clientes del tipo: {tipo_cliente}.
 Lista de barrios disponibles (en orden aleatorio):
 {', '.join(barrios_disponibles)}
 
-Recomendá UN SOLO barrio urbano o suburbano con alta actividad comercial donde haya mayor concentración de este tipo de negocios.
-Priorizá barrios con mucho movimiento comercial: centros urbanos, zonas residenciales densas o corredores gastronómicos.
-Evitá balnearios, zonas rurales o localidades pequeñas sin actividad comercial significativa.
+Recomendá UN SOLO barrio con alta densidad comercial y gastronómica.
+Priorizá barrios céntricos y con mucho movimiento: Centro, Cordón, Pocitos, Palermo, Punta Carretas, Ciudad Vieja, La Blanqueada, Tres Cruces, Aguada, Buceo, Unión.
+Evitá barrios periféricos de baja actividad comercial como Bella Italia, Malvín Norte, Camino Maldonado, Ituzaingó, Las Canteras, Flor de Maroñas, Piedras Blancas, Cerrito.
 Si hay barrios recientemente visitados, priorizá recomendar uno diferente.
 
 Respondé SOLO con un JSON válido, sin markdown ni texto adicional:

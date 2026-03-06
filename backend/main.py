@@ -169,8 +169,8 @@ def buscar_negocios(barrio: str, modo: str = "chico") -> list:
 
     return todos
 
-def tiene_negocios(barrio: str, modo: str = "chico") -> bool:
-    """Validación rápida: 1 sola llamada a Google Maps para verificar que el barrio tiene negocios."""
+def tiene_negocios(barrio: str, modo: str = "chico", minimo: int = 5) -> bool:
+    """Validación rápida: 1 sola llamada a Google Maps. Exige al menos `minimo` resultados válidos."""
     info = BARRIOS.get(barrio)
     if not info:
         return False
@@ -186,7 +186,7 @@ def tiene_negocios(barrio: str, modo: str = "chico") -> bool:
         l for l in resultado.get("results", [])
         if es_direccion_valida(l) and esta_en_barrio(l, info)
     ]
-    return len(validos) > 0
+    return len(validos) >= minimo
 
 def buscar_por_nombre(nombre: str, barrio: str = "Todo Montevideo") -> list:
     visitados = obtener_visitados_set()
