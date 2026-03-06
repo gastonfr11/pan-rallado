@@ -7,12 +7,18 @@ from unittest.mock import patch, MagicMock
 from fastapi.testclient import TestClient
 
 
+MOCK_USER = {"id": 1, "email": "test@test.com", "nombre": "Test", "rol": "admin"}
+
+
 @pytest.fixture(scope="module")
 def client():
-    """TestClient with database and anthropic mocked."""
+    """TestClient with database, anthropic, and auth mocked."""
     with patch("psycopg2.connect", return_value=MagicMock()), \
          patch("anthropic.Anthropic", return_value=MagicMock()):
         import api
+        from auth import get_current_user, require_admin
+        api.app.dependency_overrides[get_current_user] = lambda: MOCK_USER
+        api.app.dependency_overrides[require_admin] = lambda: MOCK_USER
         return TestClient(api.app)
 
 
@@ -52,13 +58,13 @@ class TestGetHistorial:
         with patch("database.obtener_historial", return_value=[]) as mock_hist:
             client.get("/historial?barrio=Pocitos")
 
-        mock_hist.assert_called_once_with("Pocitos")
+        mock_hist.assert_called_once_with("Pocitos", vendedor_id=1)
 
     def test_no_filter_when_barrio_omitted(self, client):
         with patch("database.obtener_historial", return_value=[]) as mock_hist:
             client.get("/historial")
 
-        mock_hist.assert_called_once_with(None)
+        mock_hist.assert_called_once_with(None, vendedor_id=1)
 
 
 # ── GET /visitas ─────────────────────────────────────────────────────────────
@@ -248,7 +254,7 @@ class TestDesmarcarVisitado:
 
         assert response.status_code == 200
         assert response.json() == {"ok": True}
-        mock_fn.assert_called_once_with("Bar", "Calle 1")
+        mock_fn.assert_called_once_with("Bar", "Calle 1", vendedor_id=1)
 
     def test_requires_nombre_and_direccion(self, client):
         response = client.post("/desmarcar-visitado", json={})

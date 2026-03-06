@@ -4,7 +4,7 @@ async function abrirChatNegocio(i) {
   const nuevo = { ...negociosData[i] };
 
   try {
-    const res = await fetch('/historial');
+    const res = await authFetch('/historial');
     const data = await res.json();
     const guardado = data.negocios.find(n => n.nombre === nuevo.nombre);
     if (guardado) {
@@ -19,7 +19,7 @@ async function abrirChatNegocio(i) {
 
   if (!nuevo.telefono) {
     try {
-      const res = await fetch(`/place-details?nombre=${encodeURIComponent(nuevo.nombre)}&direccion=${encodeURIComponent(nuevo.direccion)}`);
+      const res = await authFetch(`/place-details?nombre=${encodeURIComponent(nuevo.nombre)}&direccion=${encodeURIComponent(nuevo.direccion)}`);
       const data = await res.json();
       if (data.telefono) nuevo.telefono = data.telefono;
       if (data.horario) nuevo.horario = data.horario;
@@ -125,7 +125,7 @@ async function enviarMensaje() {
   agregarTyping();
 
   try {
-    const res = await fetch('/chat', {
+    const res = await authFetch('/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ mensajes: historialChat, negocio: negocioActivo || null })
@@ -172,7 +172,7 @@ async function enviarMensaje() {
 async function ejecutarBusquedaDesdeChat(barrio, modo) {
   agregarTyping();
   try {
-    const res = await fetch('/generar-roadmap', {
+    const res = await authFetch('/generar-roadmap', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ barrio, enviar_whatsapp: false, modo: modo || 'chico' })
@@ -200,7 +200,7 @@ async function abrirWppDesdeChat(negocio, tipo) {
   if (!negocio || !negocio.telefono) return;
   agregarTyping();
   try {
-    const res = await fetch('/generar-mensaje-wpp', {
+    const res = await authFetch('/generar-mensaje-wpp', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ negocio, tipo })

@@ -47,7 +47,7 @@ async function buscarPorNombre() {
   document.getElementById('emptyState').style.display = 'none';
 
   try {
-    const res = await fetch(`/buscar-por-nombre?q=${encodeURIComponent(q)}&barrio=${encodeURIComponent(barrio)}`);
+    const res = await authFetch(`/buscar-por-nombre?q=${encodeURIComponent(q)}&barrio=${encodeURIComponent(barrio)}`);
     const data = await res.json();
     overlay.classList.remove('show');
 
@@ -134,7 +134,7 @@ async function recomendarBarrio() {
   card.style.display = 'none';
 
   try {
-    const res = await fetch(`/recomendar-barrio?modo=${modo}`);
+    const res = await authFetch(`/recomendar-barrio?modo=${modo}`);
     const data = await res.json();
 
     const barrio = data.barrio_recomendado;
@@ -174,7 +174,7 @@ async function generarRoadmap() {
   document.getElementById('emptyState').style.display = 'none';
 
   try {
-    const res = await fetch('/generar-roadmap', {
+    const res = await authFetch('/generar-roadmap', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ barrio, enviar_whatsapp: whatsapp, modo })

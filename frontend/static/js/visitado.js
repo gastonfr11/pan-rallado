@@ -21,7 +21,7 @@ async function marcarVisitado(i) {
 
   // Intentar obtener datos de Google Places automáticamente
   try {
-    const res = await fetch(`/place-details?nombre=${encodeURIComponent(negocio.nombre)}&direccion=${encodeURIComponent(negocio.direccion)}`);
+    const res = await authFetch(`/place-details?nombre=${encodeURIComponent(negocio.nombre)}&direccion=${encodeURIComponent(negocio.direccion)}`);
     const data = await res.json();
     if (data.telefono) document.getElementById('modalTelefono').value = data.telefono;
     if (data.horario) document.getElementById('modalHorario').value = data.horario;
@@ -30,7 +30,7 @@ async function marcarVisitado(i) {
 
 async function editarVisitado(id) {
   try {
-    const res = await fetch('/historial');
+    const res = await authFetch('/historial');
     const data = await res.json();
     const n = data.negocios.find(x => x.id === id);
     if (!n) return;
@@ -77,7 +77,7 @@ async function guardarVisita() {
   };
 
   try {
-    const res = await fetch('/marcar-visitado', {
+    const res = await authFetch('/marcar-visitado', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)

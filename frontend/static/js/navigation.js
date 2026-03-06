@@ -13,7 +13,7 @@ function goTo(name, btn) {
 
 async function cargarBarrios() {
   try {
-    const res = await fetch('/barrios');
+    const res = await authFetch('/barrios');
     const data = await res.json();
     document.getElementById('barrio').innerHTML = data.barrios
       .map(b => `<option value="${b}">${b}</option>`).join('');

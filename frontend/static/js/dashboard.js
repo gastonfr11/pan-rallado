@@ -21,7 +21,7 @@ async function cargarDashboard() {
 
   try {
     const url = barrio ? `/historial?barrio=${encodeURIComponent(barrio)}` : '/historial';
-    const res = await fetch(url);
+    const res = await authFetch(url);
     const data = await res.json();
 
     let negocios = data.negocios.filter(n => n.visitado);
@@ -144,7 +144,7 @@ async function cargarDashboard() {
 
 async function actualizarEstado(nombre, direccion, nuevoEstado) {
   try {
-    await fetch('/marcar-visitado', {
+    await authFetch('/marcar-visitado', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ nombre, direccion, resultado: nuevoEstado })
@@ -197,7 +197,7 @@ function desmarcarVisitado(id) {
 async function confirmarDesmarcar(nombre, direccion) {
   document.getElementById('toast').classList.remove('show');
   try {
-    await fetch('/desmarcar-visitado', {
+    await authFetch('/desmarcar-visitado', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ nombre, direccion })
@@ -278,7 +278,7 @@ async function generarMensajeWpp() {
   btnGenerar.disabled = true;
 
   try {
-    const res = await fetch('/generar-mensaje-wpp', {
+    const res = await authFetch('/generar-mensaje-wpp', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ negocio: n, tipo })
@@ -343,7 +343,7 @@ async function abrirHistorialVisitas(id) {
   modal.style.justifyContent = 'center';
 
   try {
-    const res = await fetch(`/visitas?negocio_id=${id}`);
+    const res = await authFetch(`/visitas?negocio_id=${id}`);
     const data = await res.json();
     const visitas = data.visitas;
 

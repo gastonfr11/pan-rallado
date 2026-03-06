@@ -4,7 +4,7 @@ import os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from typing import Optional, List
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends, HTTPException
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -13,6 +13,7 @@ import json
 import random
 import anthropic
 import main
+from auth import get_current_user, require_admin, verify_password, hash_password, create_token
 
 app = FastAPI(title="Pan Rallado API")
 
@@ -29,6 +30,16 @@ app.mount("/static", StaticFiles(directory=static_path), name="static")
 anthropic_client = anthropic.Anthropic()
 
 # ── MODELS ────────────────────────────────────────────
+
+class LoginRequest(BaseModel):
+    email: str
+    password: str
+
+class CreateUserRequest(BaseModel):
+    email: str
+    password: str
+    nombre: str
+    rol: str = "vendedor"
 
 class RoadmapRequest(BaseModel):
     barrio: str
@@ -143,6 +154,57 @@ TOOLS = [
     }
 ]
 
+# ── AUTH ENDPOINTS ─────────────────────────────────────
+
+@app.post("/login")
+def login(req: LoginRequest):
+    from database import obtener_usuario_por_email
+    user = obtener_usuario_por_email(req.email)
+    if not user or not verify_password(req.password, user["password_hash"]):
+        raise HTTPException(status_code=401, detail="Email o contraseña incorrectos")
+    token = create_token(user["id"], user["email"], user["nombre"], user["rol"])
+    return {
+        "token": token,
+        "usuario": {
+            "id": user["id"],
+            "email": user["email"],
+            "nombre": user["nombre"],
+            "rol": user["rol"],
+        }
+    }
+
+@app.get("/me")
+def me(current_user: dict = Depends(get_current_user)):
+    return current_user
+
+# ── ADMIN ENDPOINTS ────────────────────────────────────
+
+@app.get("/admin/usuarios")
+def admin_get_usuarios(current_user: dict = Depends(require_admin)):
+    from database import obtener_todos_usuarios
+    return {"usuarios": obtener_todos_usuarios()}
+
+@app.post("/admin/usuarios")
+def admin_create_usuario(req: CreateUserRequest, current_user: dict = Depends(require_admin)):
+    from database import crear_usuario, obtener_usuario_por_email
+    if obtener_usuario_por_email(req.email):
+        raise HTTPException(status_code=400, detail="Ya existe un usuario con ese email")
+    user_id = crear_usuario(req.email, hash_password(req.password), req.nombre, req.rol)
+    return {"ok": True, "id": user_id}
+
+@app.delete("/admin/usuarios/{user_id}")
+def admin_delete_usuario(user_id: int, current_user: dict = Depends(require_admin)):
+    if user_id == current_user["id"]:
+        raise HTTPException(status_code=400, detail="No podés eliminar tu propia cuenta")
+    from database import eliminar_usuario
+    eliminar_usuario(user_id)
+    return {"ok": True}
+
+@app.get("/admin/stats")
+def admin_stats(current_user: dict = Depends(require_admin)):
+    from database import obtener_stats_por_vendedor
+    return {"stats": obtener_stats_por_vendedor()}
+
 # ── ENDPOINTS ─────────────────────────────────────────
 
 @app.get("/")
@@ -150,15 +212,20 @@ def root():
     return FileResponse(os.path.join(static_path, "index.html"))
 
 @app.get("/barrios")
-def get_barrios():
+def get_barrios(current_user: dict = Depends(get_current_user)):
     return {"barrios": list(main.BARRIOS.keys())}
 
 @app.post("/generar-roadmap")
-def generar_roadmap(req: RoadmapRequest):
-    return main.generar_roadmap(barrio=req.barrio, enviar_whatsapp=req.enviar_whatsapp, modo=req.modo)
+def generar_roadmap(req: RoadmapRequest, current_user: dict = Depends(get_current_user)):
+    return main.generar_roadmap(
+        barrio=req.barrio,
+        enviar_whatsapp=req.enviar_whatsapp,
+        modo=req.modo,
+        vendedor_id=current_user["id"]
+    )
 
 @app.post("/generar-mensaje-wpp")
-def generar_mensaje_wpp(req: GenerarMensajeWppRequest):
+def generar_mensaje_wpp(req: GenerarMensajeWppRequest, current_user: dict = Depends(get_current_user)):
     n = req.negocio
     tipos = {
         "presentacion": "Escribí un mensaje de presentación comercial. Es el primer contacto, presentate como vendedor de una distribuidora de pan rallado y mencioná brevemente los productos.",
@@ -190,7 +257,9 @@ Reglas:
     return {"mensaje": response.content[0].text.strip()}
 
 @app.post("/chat")
-def chat(req: ChatRequest):
+def chat(req: ChatRequest, current_user: dict = Depends(get_current_user)):
+    vendedor_id = current_user["id"]
+
     if req.negocio:
         system_prompt = f"""Sos un asistente comercial de una distribuidora de pan rallado en Uruguay.
 Negocio actual:
@@ -240,6 +309,7 @@ Cuando el vendedor quiera buscar negocios en un barrio, usá la herramienta busc
                 email=req.negocio.get('email'),
                 tipo_negocio=req.negocio.get('tipo_negocio') or req.negocio.get('tipo'),
                 nivel_operativo=req.negocio.get('nivel_operativo'),
+                vendedor_id=vendedor_id,
             )
             return {
                 "respuesta": _confirmar_accion(tool_name, tool_input, req.negocio),
@@ -253,7 +323,8 @@ Cuando el vendedor quiera buscar negocios en un barrio, usá la herramienta busc
                 nombre=req.negocio.get('nombre'),
                 direccion=req.negocio.get('direccion'),
                 resultado=req.negocio.get('resultado', 'visitado'),
-                notas=tool_input.get('notas', '')
+                notas=tool_input.get('notas', ''),
+                vendedor_id=vendedor_id,
             )
             return {
                 "respuesta": f"✅ Nota guardada: \"{tool_input.get('notas')}\"",
@@ -279,7 +350,7 @@ Cuando el vendedor quiera buscar negocios en un barrio, usá la herramienta busc
             if not telefono:
                 return {"respuesta": "❌ Este negocio no tiene teléfono guardado."}
             return {
-                "respuesta": f"📲 Generando mensaje de WhatsApp...",
+                "respuesta": "📲 Generando mensaje de WhatsApp...",
                 "tool_ejecutada": tool_name,
                 "tool_input": {
                     "tipo": tool_input.get('tipo', 'presentacion'),
@@ -308,19 +379,19 @@ def _confirmar_accion(tool_name: str, tool_input: dict, negocio: dict) -> str:
 
 
 @app.get("/buscar-por-nombre")
-def buscar_por_nombre(q: str, barrio: str = "Todo Montevideo"):
+def buscar_por_nombre(q: str, barrio: str = "Todo Montevideo", current_user: dict = Depends(get_current_user)):
     if not q or not q.strip():
         return {"resultados": [], "total": 0}
-    resultados = main.buscar_por_nombre(q.strip(), barrio)
+    resultados = main.buscar_por_nombre(q.strip(), barrio, vendedor_id=current_user["id"])
     return {"resultados": resultados, "total": len(resultados)}
 
 
 @app.get("/recomendar-barrio")
-def recomendar_barrio(modo: str = "chico"):
-    import random
+def recomendar_barrio(modo: str = "chico", current_user: dict = Depends(get_current_user)):
+    vendedor_id = current_user["id"]
     from database import obtener_barrios_recientes
 
-    barrios_recientes = obtener_barrios_recientes(n=5)
+    barrios_recientes = obtener_barrios_recientes(n=5, vendedor_id=vendedor_id)
     todos = [b for b in main.BARRIOS_MONTEVIDEO if b != "Todo Montevideo"]
     random.shuffle(todos)
 
@@ -378,31 +449,34 @@ Respondé SOLO con un JSON válido, sin markdown ni texto adicional:
     fallback = next((b for b in todos if b not in sin_resultados), todos[0] if todos else "Pocitos")
     return {"barrio_recomendado": fallback, "razon": "Zona con actividad comercial en la región."}
 
+
 @app.post("/marcar-visitado")
-def marcar_visitado_endpoint(req: MarcarVisitadoRequest):
+def marcar_visitado_endpoint(req: MarcarVisitadoRequest, current_user: dict = Depends(get_current_user)):
     from database import marcar_visitado as db_marcar
     db_marcar(
         req.nombre, req.direccion, req.resultado, req.notas,
         req.telefono, req.email, req.horario, req.tipo_negocio,
-        req.nivel_operativo, req.tiene_rotiseria, req.tiene_produccion_propia
+        req.nivel_operativo, req.tiene_rotiseria, req.tiene_produccion_propia,
+        vendedor_id=current_user["id"]
     )
     return {"ok": True}
 
 @app.get("/historial")
-def get_historial(barrio: str = None):
+def get_historial(barrio: str = None, current_user: dict = Depends(get_current_user)):
     from database import obtener_historial, obtener_historial_zona
+    vendedor_id = current_user["id"]
     if barrio == "Todo Montevideo":
-        return {"negocios": obtener_historial_zona(main.BARRIOS_MONTEVIDEO)}
-    return {"negocios": obtener_historial(barrio)}
+        return {"negocios": obtener_historial_zona(main.BARRIOS_MONTEVIDEO, vendedor_id=vendedor_id)}
+    return {"negocios": obtener_historial(barrio, vendedor_id=vendedor_id)}
 
 @app.post("/resetear-db")
-def resetear_db():
+def resetear_db(current_user: dict = Depends(require_admin)):
     from database import resetear_db as db_reset
     db_reset()
     return {"ok": True}
 
 @app.get("/place-details")
-def place_details(nombre: str, direccion: str):
+def place_details(nombre: str, direccion: str, current_user: dict = Depends(get_current_user)):
     import googlemaps
     gmaps = googlemaps.Client(key=os.getenv("GOOGLE_MAPS_API_KEY"))
     try:
@@ -424,12 +498,12 @@ def place_details(nombre: str, direccion: str):
         return {"telefono": None, "horario": None}
 
 @app.get("/visitas")
-def get_visitas(negocio_id: int):
+def get_visitas(negocio_id: int, current_user: dict = Depends(get_current_user)):
     from database import obtener_visitas
     return {"visitas": obtener_visitas(negocio_id)}
 
 @app.post("/desmarcar-visitado")
-def desmarcar_visitado_endpoint(req: DesmarcarVisitadoRequest):
+def desmarcar_visitado_endpoint(req: DesmarcarVisitadoRequest, current_user: dict = Depends(get_current_user)):
     from database import desmarcar_visitado as db_desmarcar
-    db_desmarcar(req.nombre, req.direccion)
+    db_desmarcar(req.nombre, req.direccion, vendedor_id=current_user["id"])
     return {"ok": True}

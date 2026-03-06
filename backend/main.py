@@ -123,11 +123,11 @@ def es_direccion_valida(lugar: dict) -> bool:
     direccion = lugar.get("formatted_address", "")
     return "+" not in direccion.split(",")[0]
 
-def buscar_negocios(barrio: str, modo: str = "chico") -> list:
+def buscar_negocios(barrio: str, modo: str = "chico", vendedor_id: int = None) -> list:
     categorias = CATEGORIAS_GRANDE if modo == "grande" else CATEGORIAS_CHICO
 
     # Una sola query a la DB para todos los visitados
-    visitados = obtener_visitados_set()
+    visitados = obtener_visitados_set(vendedor_id=vendedor_id)
 
     if barrio == "Todo Montevideo":
         info = {"lat": -34.9011, "lng": -56.1645, "radio": 15000}
@@ -188,8 +188,8 @@ def tiene_negocios(barrio: str, modo: str = "chico", minimo: int = 5) -> bool:
     ]
     return len(validos) >= minimo
 
-def buscar_por_nombre(nombre: str, barrio: str = "Todo Montevideo") -> list:
-    visitados = obtener_visitados_set()
+def buscar_por_nombre(nombre: str, barrio: str = "Todo Montevideo", vendedor_id: int = None) -> list:
+    visitados = obtener_visitados_set(vendedor_id=vendedor_id)
 
     if barrio == "Todo Montevideo":
         info = {"lat": -34.9011, "lng": -56.1645, "radio": 15000}
@@ -232,8 +232,8 @@ def buscar_por_nombre(nombre: str, barrio: str = "Todo Montevideo") -> list:
 
     return negocios
 
-def generar_roadmap(barrio: str, enviar_whatsapp: bool = False, modo: str = "chico") -> dict:
-    negocios = buscar_negocios(barrio, modo=modo)
+def generar_roadmap(barrio: str, enviar_whatsapp: bool = False, modo: str = "chico", vendedor_id: int = None) -> dict:
+    negocios = buscar_negocios(barrio, modo=modo, vendedor_id=vendedor_id)
     if not negocios:
         return {"error": "No se encontraron negocios", "barrio": barrio}
 
@@ -246,7 +246,7 @@ def generar_roadmap(barrio: str, enviar_whatsapp: bool = False, modo: str = "chi
         seleccionados, distancia_km, tiempo_min = optimizar_ruta(seleccionados)
 
     for n in seleccionados:
-        registrar_negocio(n["nombre"], n["direccion"], barrio, n.get("tipo"))
+        registrar_negocio(n["nombre"], n["direccion"], barrio, n.get("tipo"), vendedor_id=vendedor_id)
 
     if enviar_whatsapp:
         enviar_roadmap_whatsapp(barrio, seleccionados, distancia_km, tiempo_min)

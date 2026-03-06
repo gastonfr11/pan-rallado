@@ -7,6 +7,7 @@ let negociosData = [];
 let negocioActivo = null;
 let historialChat = [];
 let negocioParaVisitar = null;
+let currentUser = null;
 
 const screens = {
   generar:   'generarScreen',
@@ -15,3 +16,15 @@ const screens = {
   chat:      'chatScreen',
   dashboard: 'dashboardScreen',
 };
+
+async function authFetch(url, options = {}) {
+  const token = localStorage.getItem('authToken');
+  const headers = { ...(options.headers || {}) };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  const res = await fetch(url, { ...options, headers });
+  if (res.status === 401) {
+    logout();
+    throw new Error('Unauthorized');
+  }
+  return res;
+}

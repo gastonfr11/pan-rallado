@@ -19,7 +19,25 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
 </head>
 <body>
-<div id="app">
+
+<!-- LOGIN SCREEN -->
+<div id="loginScreen" style="display:flex;position:fixed;inset:0;background:var(--bg);z-index:9999;align-items:center;justify-content:center;padding:24px;">
+  <div class="login-card">
+    <div class="login-logo">🥖</div>
+    <div class="login-title">PAN RALLADO</div>
+    <div class="login-subtitle">Agente de Ventas · Montevideo</div>
+    <div class="login-form">
+      <input type="email" id="loginEmail" placeholder="Email" autocomplete="email"
+        onkeydown="if(event.key==='Enter') document.getElementById('loginPassword').focus()">
+      <input type="password" id="loginPassword" placeholder="Contraseña" autocomplete="current-password"
+        onkeydown="if(event.key==='Enter') iniciarSesion()">
+      <button id="btnLogin" onclick="iniciarSesion()">ENTRAR</button>
+      <div id="loginError" class="login-error"></div>
+    </div>
+  </div>
+</div>
+
+<div id="app" style="display:none;">
 
   <!-- HEADER -->
   <div id="header">
@@ -28,7 +46,10 @@
       <div class="logo-text">PAN RALLADO</div>
       <div class="tagline">AGENTE DE VENTAS · MONTEVIDEO</div>
     </div>
-    <div class="status-dot"></div>
+    <div id="userInfo" style="display:none;align-items:center;gap:8px;margin-left:auto;">
+      <span id="userName" class="user-name"></span>
+      <button onclick="logout()" class="btn-logout">Salir</button>
+    </div>
   </div>
 
   <!-- CONTENT -->
@@ -202,6 +223,34 @@
       </div>
       <div class="stats-row" id="dashboardStats"></div>
       <div id="dashboardLista" style="display:flex;flex-direction:column;gap:10px;"></div>
+
+      <!-- ADMIN PANEL (solo visible para admin) -->
+      <div id="adminPanel" style="display:none;margin-top:24px;">
+        <div class="card">
+          <div class="card-title">👥 Panel de administración</div>
+
+          <div style="margin-bottom:16px;">
+            <div style="font-size:0.75rem;color:var(--text-mid);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">Estadísticas por vendedor</div>
+            <div id="adminStatsContainer"></div>
+          </div>
+
+          <div style="border-top:1px solid var(--border);padding-top:16px;margin-bottom:16px;">
+            <div style="font-size:0.75rem;color:var(--text-mid);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">Vendedores</div>
+            <div id="adminUsuariosList"></div>
+          </div>
+
+          <div style="border-top:1px solid var(--border);padding-top:16px;">
+            <div style="font-size:0.75rem;color:var(--text-mid);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">Agregar vendedor</div>
+            <div style="display:flex;flex-direction:column;gap:8px;">
+              <input type="text" id="nuevoNombre" placeholder="Nombre">
+              <input type="email" id="nuevoEmail" placeholder="Email">
+              <input type="password" id="nuevoPassword" placeholder="Contraseña">
+              <div id="adminCreateError" class="login-error"></div>
+              <button class="btn-primary" onclick="crearVendedor()">+ AGREGAR VENDEDOR</button>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
   </div>
@@ -302,9 +351,7 @@
 <script src="/static/js/visitado.js"></script>
 <script src="/static/js/dashboard.js"></script>
 <script src="/static/js/roadmap.js"></script>
+<script src="/static/js/login.js"></script>
 <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDYHfHRh3mcxWFNK8l3CvTldIWMLPiuJMY&loading=async"></script>
-<script>
-  window.addEventListener('load', () => cargarBarrios());
-</script>
 </body>
 </html>

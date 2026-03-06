@@ -17,4 +17,5 @@ _mock_main.BARRIOS = {
     "Pocitos": {"lat": -34.9059, "lng": -56.1507, "radio": 1000},
     "Centro":  {"lat": -34.9060, "lng": -56.1880, "radio": 1000},
 }
+_mock_main.BARRIOS_MONTEVIDEO = ["Pocitos", "Centro"]
 sys.modules.setdefault("main", _mock_main)
