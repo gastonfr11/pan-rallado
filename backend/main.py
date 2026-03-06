@@ -169,6 +169,69 @@ def buscar_negocios(barrio: str, modo: str = "chico") -> list:
 
     return todos
 
+def tiene_negocios(barrio: str, modo: str = "chico") -> bool:
+    """Validación rápida: 1 sola llamada a Google Maps para verificar que el barrio tiene negocios."""
+    info = BARRIOS.get(barrio)
+    if not info:
+        return False
+    categorias = CATEGORIAS_GRANDE if modo == "grande" else CATEGORIAS_CHICO
+    sufijo = ", Montevideo" if barrio in BARRIOS_MONTEVIDEO else ", Uruguay"
+    resultado = gmaps.places(
+        query=f"{categorias[0]} en {barrio}{sufijo}",
+        location=(info["lat"], info["lng"]),
+        radius=info["radio"],
+        language="es"
+    )
+    validos = [
+        l for l in resultado.get("results", [])
+        if es_direccion_valida(l) and esta_en_barrio(l, info)
+    ]
+    return len(validos) > 0
+
+def buscar_por_nombre(nombre: str, barrio: str = "Todo Montevideo") -> list:
+    visitados = obtener_visitados_set()
+
+    if barrio == "Todo Montevideo":
+        info = {"lat": -34.9011, "lng": -56.1645, "radio": 15000}
+        query = f"{nombre} en Montevideo"
+        en_barrio_fn = lambda lugar: True
+    else:
+        info = BARRIOS.get(barrio)
+        if not info:
+            return []
+        sufijo = ", Montevideo" if barrio in BARRIOS_MONTEVIDEO else ", Uruguay"
+        query = f"{nombre} en {barrio}{sufijo}"
+        en_barrio_fn = lambda lugar: esta_en_barrio(lugar, info)
+
+    resultado = gmaps.places(
+        query=query,
+        location=(info["lat"], info["lng"]),
+        radius=info["radio"],
+        language="es"
+    )
+
+    negocios = []
+    vistos = set()
+    for lugar in resultado.get("results", []):
+        nombre_lugar = lugar["name"]
+        direccion = lugar.get("formatted_address", "")
+        if nombre_lugar not in vistos and es_direccion_valida(lugar) and en_barrio_fn(lugar):
+            vistos.add(nombre_lugar)
+            geo = lugar.get("geometry", {}).get("location", {})
+            tipos = lugar.get("types", [])
+            tipo = tipos[0].replace("_", " ") if tipos else "negocio"
+            negocios.append({
+                "nombre": nombre_lugar,
+                "direccion": direccion,
+                "lat": geo.get("lat"),
+                "lng": geo.get("lng"),
+                "tipo": tipo,
+                "ya_visitado": (nombre_lugar, direccion) in visitados,
+                "razon": "",
+            })
+
+    return negocios
+
 def generar_roadmap(barrio: str, enviar_whatsapp: bool = False, modo: str = "chico") -> dict:
     negocios = buscar_negocios(barrio, modo=modo)
     if not negocios:

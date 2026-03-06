@@ -307,13 +307,20 @@ def _confirmar_accion(tool_name: str, tool_input: dict, negocio: dict) -> str:
     return msg
 
 
+@app.get("/buscar-por-nombre")
+def buscar_por_nombre(q: str, barrio: str = "Todo Montevideo"):
+    if not q or not q.strip():
+        return {"resultados": [], "total": 0}
+    resultados = main.buscar_por_nombre(q.strip(), barrio)
+    return {"resultados": resultados, "total": len(resultados)}
+
+
 @app.get("/recomendar-barrio")
 def recomendar_barrio(modo: str = "chico"):
     import random
     from database import obtener_barrios_recientes
 
     barrios_recientes = obtener_barrios_recientes(n=5)
-
     todos = [b for b in main.BARRIOS.keys() if b != "Todo Montevideo"]
     random.shuffle(todos)
 
@@ -323,47 +330,53 @@ def recomendar_barrio(modo: str = "chico"):
         else "clientes industriales como frigoríficos, plantas procesadoras, distribuidoras de alimentos y empresas de catering"
     )
 
-    recientes_texto = (
-        f"Barrios visitados recientemente (preferentemente evitar repetir): {', '.join(barrios_recientes)}"
-        if barrios_recientes
-        else "No hay historial de visitas previas."
-    )
-
-    prompt = f"""Sos un experto en ventas para una distribuidora de pan rallado en Montevideo, Uruguay.
+    def _pedir_recomendacion(barrios_disponibles: list, sin_resultados: list) -> tuple:
+        recientes_texto = (
+            f"Barrios visitados recientemente (preferentemente evitar repetir): {', '.join(barrios_recientes)}"
+            if barrios_recientes else "No hay historial de visitas previas."
+        )
+        sin_resultados_texto = (
+            f"\nIMPORTANTE — estos barrios fueron verificados y NO tienen negocios disponibles, no los recomiendes: {', '.join(sin_resultados)}"
+            if sin_resultados else ""
+        )
+        prompt = f"""Sos un experto en ventas para una distribuidora de pan rallado en Montevideo, Uruguay.
 El vendedor busca nuevos clientes del tipo: {tipo_cliente}.
 
-{recientes_texto}
+{recientes_texto}{sin_resultados_texto}
 
 Lista de barrios disponibles (en orden aleatorio):
-{', '.join(todos)}
+{', '.join(barrios_disponibles)}
 
-Analizando el tipo de actividad comercial y gastronómica de cada zona, recomendá UN SOLO barrio donde haya mayor concentración de este tipo de negocios y por lo tanto más potencial de venta de pan rallado.
-Considerá la densidad comercial, el perfil gastronómico del barrio y la variedad de clientes potenciales.
-Si hay barrios recientemente visitados, priorizá recomendar uno diferente para diversificar la zona de trabajo.
+Recomendá UN SOLO barrio urbano o suburbano con alta actividad comercial donde haya mayor concentración de este tipo de negocios.
+Priorizá barrios con mucho movimiento comercial: centros urbanos, zonas residenciales densas o corredores gastronómicos.
+Evitá balnearios, zonas rurales o localidades pequeñas sin actividad comercial significativa.
+Si hay barrios recientemente visitados, priorizá recomendar uno diferente.
 
-Respondé SOLO con un JSON válido con este formato exacto, sin markdown ni explicaciones adicionales:
-{{"barrio": "nombre exacto del barrio de la lista", "razon": "explicación de 1-2 oraciones en español rioplatense explicando por qué ese barrio tiene potencial"}}"""
+Respondé SOLO con un JSON válido, sin markdown ni texto adicional:
+{{"barrio": "nombre exacto del barrio de la lista", "razon": "explicación de 1-2 oraciones en español rioplatense"}}"""
 
-    response = anthropic_client.messages.create(
-        model="claude-haiku-4-5-20251001",
-        max_tokens=250,
-        messages=[{"role": "user", "content": prompt}]
-    )
-
-    text = response.content[0].text.strip()
-    try:
-        resultado = json.loads(text)
+        response = anthropic_client.messages.create(
+            model="claude-haiku-4-5-20251001",
+            max_tokens=250,
+            messages=[{"role": "user", "content": prompt}]
+        )
+        resultado = json.loads(response.content[0].text.strip())
         barrio = resultado.get("barrio", "")
         barrio_match = next((b for b in main.BARRIOS.keys() if b.lower() == barrio.lower()), None)
-        if not barrio_match:
-            barrio_match = todos[0] if todos else "Pocitos"
-        return {
-            "barrio_recomendado": barrio_match,
-            "razon": resultado.get("razon", "")
-        }
-    except json.JSONDecodeError:
-        barrio_match = todos[0] if todos else "Pocitos"
-        return {"barrio_recomendado": barrio_match, "razon": "Zona con buen potencial comercial."}
+        return barrio_match or (barrios_disponibles[0] if barrios_disponibles else "Pocitos"), resultado.get("razon", "")
+
+    sin_resultados = []
+    for _ in range(2):
+        try:
+            barrio_match, razon = _pedir_recomendacion(todos, sin_resultados)
+        except json.JSONDecodeError:
+            break
+        if main.tiene_negocios(barrio_match, modo):
+            return {"barrio_recomendado": barrio_match, "razon": razon}
+        sin_resultados.append(barrio_match)
+
+    fallback = next((b for b in todos if b not in sin_resultados), todos[0] if todos else "Pocitos")
+    return {"barrio_recomendado": fallback, "razon": "Zona con actividad comercial en la región."}
 
 @app.post("/marcar-visitado")
 def marcar_visitado_endpoint(req: MarcarVisitadoRequest):

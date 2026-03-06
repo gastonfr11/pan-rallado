@@ -44,7 +44,8 @@
         <div class="card-title">📍 Zona del día</div>
         <div class="modo-tabs">
           <button class="modo-tab active" id="tabManual" onclick="setModoBarrio('manual')">Manual</button>
-          <button class="modo-tab" id="tabInteligente" onclick="setModoBarrio('inteligente')">✨ Búsqueda Inteligente</button>
+          <button class="modo-tab" id="tabInteligente" onclick="setModoBarrio('inteligente')">✨ Inteligente</button>
+          <button class="modo-tab" id="tabNombre" onclick="setModoBarrio('nombre')">🔎 Por nombre</button>
         </div>
         <div style="display:flex;flex-direction:column;gap:12px;">
           <div id="modoManualFields">
@@ -59,6 +60,19 @@
             <p class="inteligente-desc">Analizamos las zonas de Montevideo y te recomendamos el barrio con más potencial para vender pan rallado según el tipo de cliente.</p>
             <button class="btn-recomendar" id="btnRecomendar" onclick="recomendarBarrio()">🔍 Analizar y recomendar</button>
             <div id="recomendacionCard" style="display:none;"></div>
+          </div>
+          <div id="modoNombreFields" style="display:none;flex-direction:column;gap:10px;">
+            <div class="field">
+              <label>Nombre del negocio</label>
+              <input type="text" id="busquedaNombre" placeholder="Ej: Bocatti, Pizza Hut..." onkeydown="if(event.key==='Enter') buscarPorNombre()">
+            </div>
+            <div class="field">
+              <label>Zona</label>
+              <div class="select-wrapper">
+                <select id="barrioNombre"></select>
+              </div>
+            </div>
+            <button class="btn-primary" id="btnBuscarNombre" onclick="buscarPorNombre()">🔎 BUSCAR</button>
           </div>
           <div class="field">
             <label>Tipo de cliente</label>
