@@ -321,7 +321,7 @@ def recomendar_barrio(modo: str = "chico"):
     from database import obtener_barrios_recientes
 
     barrios_recientes = obtener_barrios_recientes(n=5)
-    todos = [b for b in main.BARRIOS.keys() if b != "Todo Montevideo"]
+    todos = [b for b in main.BARRIOS_MONTEVIDEO if b != "Todo Montevideo"]
     random.shuffle(todos)
 
     tipo_cliente = (
