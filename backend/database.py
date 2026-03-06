@@ -149,13 +149,36 @@ def obtener_stats_por_vendedor() -> list:
         SELECT u.id, u.nombre, u.email,
                COUNT(n.id) FILTER (WHERE n.visitado = TRUE) AS visitados,
                COUNT(n.id) FILTER (WHERE n.resultado = 'cliente') AS clientes,
-               COUNT(n.id) FILTER (WHERE n.resultado = 'interesado') AS interesados
+               COUNT(n.id) FILTER (WHERE n.resultado = 'interesado') AS interesados,
+               COUNT(n.id) FILTER (WHERE n.resultado = 'no_interesado') AS no_interesados,
+               ROUND(
+                 COUNT(n.id) FILTER (WHERE n.resultado = 'cliente')::numeric /
+                 NULLIF(COUNT(n.id) FILTER (WHERE n.visitado = TRUE), 0) * 100, 1
+               ) AS tasa_conversion,
+               MAX(n.fecha_ultima_visita) AS ultima_actividad,
+               COUNT(DISTINCT n.barrio) FILTER (WHERE n.visitado = TRUE) AS barrios_visitados
         FROM usuarios u
         LEFT JOIN negocios n ON n.vendedor_id = u.id
         WHERE u.activo = TRUE AND u.rol = 'vendedor'
         GROUP BY u.id, u.nombre, u.email
         ORDER BY visitados DESC
     """)
+    rows = cursor.fetchall()
+    cursor.close()
+    conn.close()
+    return [dict(r) for r in rows]
+
+
+def obtener_negocios_por_vendedor(vendedor_id: int) -> list:
+    conn = get_conn()
+    cursor = conn.cursor(cursor_factory=RealDictCursor)
+    cursor.execute("""
+        SELECT id, nombre, direccion, barrio, resultado, tipo_negocio,
+               fecha_primera_visita, fecha_ultima_visita, notas
+        FROM negocios
+        WHERE vendedor_id = %s AND visitado = TRUE
+        ORDER BY fecha_ultima_visita DESC NULLS LAST
+    """, (vendedor_id,))
     rows = cursor.fetchall()
     cursor.close()
     conn.close()

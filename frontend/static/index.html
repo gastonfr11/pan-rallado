@@ -48,6 +48,7 @@
     </div>
     <div id="userInfo" style="display:none;align-items:center;gap:8px;margin-left:auto;">
       <span id="userName" class="user-name"></span>
+      <button id="btnAdmin" onclick="abrirAdminDrawer()" style="display:none;background:var(--surface2);border:1px solid var(--border);color:var(--text-mid);padding:6px 10px;border-radius:8px;font-size:0.8rem;cursor:pointer;font-family:'DM Sans',sans-serif;" title="Panel admin">⚙️</button>
       <button onclick="logout()" class="btn-logout">Salir</button>
     </div>
   </div>
@@ -223,36 +224,49 @@
       </div>
       <div class="stats-row" id="dashboardStats"></div>
       <div id="dashboardLista" style="display:flex;flex-direction:column;gap:10px;"></div>
-
-      <!-- ADMIN PANEL (solo visible para admin) -->
-      <div id="adminPanel" style="display:none;margin-top:24px;">
-        <div class="card">
-          <div class="card-title">👥 Panel de administración</div>
-
-          <div style="margin-bottom:16px;">
-            <div style="font-size:0.75rem;color:var(--text-mid);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">Estadísticas por vendedor</div>
-            <div id="adminStatsContainer"></div>
-          </div>
-
-          <div style="border-top:1px solid var(--border);padding-top:16px;margin-bottom:16px;">
-            <div style="font-size:0.75rem;color:var(--text-mid);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">Vendedores</div>
-            <div id="adminUsuariosList"></div>
-          </div>
-
-          <div style="border-top:1px solid var(--border);padding-top:16px;">
-            <div style="font-size:0.75rem;color:var(--text-mid);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">Agregar vendedor</div>
-            <div style="display:flex;flex-direction:column;gap:8px;">
-              <input type="text" id="nuevoNombre" placeholder="Nombre">
-              <input type="email" id="nuevoEmail" placeholder="Email">
-              <input type="password" id="nuevoPassword" placeholder="Contraseña">
-              <div id="adminCreateError" class="login-error"></div>
-              <button class="btn-primary" onclick="crearVendedor()">+ AGREGAR VENDEDOR</button>
-            </div>
-          </div>
-        </div>
-      </div>
     </div>
 
+  </div>
+
+  <!-- ADMIN DRAWER -->
+  <div id="adminDrawerBackdrop" onclick="cerrarAdminDrawer()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);backdrop-filter:blur(3px);z-index:400;"></div>
+  <div id="adminDrawer" style="position:fixed;top:0;right:-100%;width:88%;max-width:420px;height:100%;background:var(--surface);border-left:1px solid var(--border);z-index:401;overflow-y:auto;transition:right 0.3s ease;box-shadow:-8px 0 32px rgba(0,0,0,0.5);display:flex;flex-direction:column;">
+    <div style="padding:16px 16px 0;flex-shrink:0;">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding-bottom:16px;border-bottom:1px solid var(--border);">
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:1.3rem;color:var(--accent);letter-spacing:2px;">⚙️ ADMIN</div>
+        <button onclick="cerrarAdminDrawer()" style="background:var(--surface2);border:1px solid var(--border);color:var(--text-mid);padding:6px 12px;border-radius:8px;font-size:0.8rem;cursor:pointer;font-family:'DM Sans',sans-serif;">✕ Cerrar</button>
+      </div>
+    </div>
+    <div style="padding:16px;flex:1;display:flex;flex-direction:column;gap:20px;">
+
+      <!-- Stats por vendedor -->
+      <div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+          <div style="font-size:0.7rem;color:var(--text-mid);text-transform:uppercase;letter-spacing:0.5px;">Estadísticas por vendedor</div>
+          <button onclick="cargarAdminPanel()" style="background:none;border:none;color:var(--text-dim);font-size:0.75rem;cursor:pointer;font-family:'DM Sans',sans-serif;">↻ Actualizar</button>
+        </div>
+        <div id="adminStatsContainer"></div>
+      </div>
+
+      <!-- Lista vendedores -->
+      <div style="border-top:1px solid var(--border);padding-top:16px;">
+        <div style="font-size:0.7rem;color:var(--text-mid);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">Vendedores</div>
+        <div id="adminUsuariosList"></div>
+      </div>
+
+      <!-- Agregar vendedor -->
+      <div style="border-top:1px solid var(--border);padding-top:16px;">
+        <div style="font-size:0.7rem;color:var(--text-mid);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">Agregar vendedor</div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <input type="text" id="nuevoNombre" placeholder="Nombre">
+          <input type="email" id="nuevoEmail" placeholder="Email">
+          <input type="password" id="nuevoPassword" placeholder="Contraseña">
+          <div id="adminCreateError" class="login-error"></div>
+          <button class="btn-primary" onclick="crearVendedor()">+ AGREGAR VENDEDOR</button>
+        </div>
+      </div>
+
+    </div>
   </div>
 
   <!-- NAV -->

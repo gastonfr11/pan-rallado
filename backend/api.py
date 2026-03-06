@@ -205,6 +205,11 @@ def admin_stats(current_user: dict = Depends(require_admin)):
     from database import obtener_stats_por_vendedor
     return {"stats": obtener_stats_por_vendedor()}
 
+@app.get("/admin/vendedor/{vendedor_id}/negocios")
+def admin_vendedor_negocios(vendedor_id: int, current_user: dict = Depends(require_admin)):
+    from database import obtener_negocios_por_vendedor
+    return {"negocios": obtener_negocios_por_vendedor(vendedor_id)}
+
 # ── ENDPOINTS ─────────────────────────────────────────
 
 @app.get("/")

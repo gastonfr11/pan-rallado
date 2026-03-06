@@ -136,3 +136,7 @@
 .admin-stat-num { font-size: 0.75rem; color: var(--text-dim); background: var(--surface2); border: 1px solid var(--border); padding: 2px 8px; border-radius: 20px; }
 .admin-stat-num.cliente { color: #4dff91; border-color: rgba(77,255,145,0.3); }
 .admin-stat-num.interesado { color: var(--accent); border-color: rgba(245,166,35,0.3); }
+.admin-stat-num.no-int { color: #ff6464; border-color: rgba(255,77,77,0.3); }
+.admin-stat-num.barrio { color: #a78bfa; border-color: rgba(167,139,250,0.3); }
+.admin-stat-card { background: var(--bg); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; display: flex; flex-direction: column; gap: 0; margin-bottom: 10px; }
+.admin-stat-card:last-child { margin-bottom: 0; }
