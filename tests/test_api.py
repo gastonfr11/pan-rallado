@@ -233,7 +233,7 @@ class TestRecomendarBarrio:
             client.get("/recomendar-barrio")
 
         model = mock_claude.call_args.kwargs["model"]
-        assert "haiku" in model
+        assert "sonnet" in model
 
 
 # ── POST /desmarcar-visitado ─────────────────────────────────────────────────
