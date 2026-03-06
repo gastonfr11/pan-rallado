@@ -144,6 +144,98 @@ class TestMarcarVisitado:
         assert mock_fn.call_args.args[2] == "visitado"
 
 
+# ── GET /recomendar-barrio ────────────────────────────────────────────────────
+
+class TestRecomendarBarrio:
+    def _claude_response(self, barrio, razon="Buena zona comercial."):
+        mock_resp = MagicMock()
+        mock_resp.content = [MagicMock(text=f'{{"barrio": "{barrio}", "razon": "{razon}"}}')]
+        return mock_resp
+
+    def test_returns_200_with_expected_keys(self, client):
+        with patch("database.obtener_barrios_recientes", return_value=[]), \
+             patch("api.anthropic_client.messages.create", return_value=self._claude_response("Pocitos")):
+            response = client.get("/recomendar-barrio")
+
+        assert response.status_code == 200
+        data = response.json()
+        assert "barrio_recomendado" in data
+        assert "razon" in data
+
+    def test_recommended_barrio_is_a_known_barrio(self, client):
+        import main
+        with patch("database.obtener_barrios_recientes", return_value=[]), \
+             patch("api.anthropic_client.messages.create", return_value=self._claude_response("Pocitos")):
+            response = client.get("/recomendar-barrio")
+
+        assert response.json()["barrio_recomendado"] in main.BARRIOS
+
+    def test_prompt_mentions_chico_categories_by_default(self, client):
+        with patch("database.obtener_barrios_recientes", return_value=[]), \
+             patch("api.anthropic_client.messages.create", return_value=self._claude_response("Pocitos")) as mock_claude:
+            client.get("/recomendar-barrio")
+
+        prompt = mock_claude.call_args.kwargs["messages"][0]["content"]
+        assert "pizzerías" in prompt or "rotiserías" in prompt
+
+    def test_prompt_mentions_grande_categories_when_modo_grande(self, client):
+        with patch("database.obtener_barrios_recientes", return_value=[]), \
+             patch("api.anthropic_client.messages.create", return_value=self._claude_response("Centro")) as mock_claude:
+            client.get("/recomendar-barrio?modo=grande")
+
+        prompt = mock_claude.call_args.kwargs["messages"][0]["content"]
+        assert "frigorífico" in prompt or "industrial" in prompt.lower()
+
+    def test_recent_barrios_appear_in_prompt(self, client):
+        recientes = ["Pocitos", "Buceo"]
+        with patch("database.obtener_barrios_recientes", return_value=recientes), \
+             patch("api.anthropic_client.messages.create", return_value=self._claude_response("Centro")) as mock_claude:
+            client.get("/recomendar-barrio")
+
+        prompt = mock_claude.call_args.kwargs["messages"][0]["content"]
+        assert "Pocitos" in prompt
+        assert "Buceo" in prompt
+
+    def test_fallback_when_claude_returns_invalid_json(self, client):
+        import main
+        bad_resp = MagicMock()
+        bad_resp.content = [MagicMock(text="No puedo decidirme")]
+
+        with patch("database.obtener_barrios_recientes", return_value=[]), \
+             patch("api.anthropic_client.messages.create", return_value=bad_resp):
+            response = client.get("/recomendar-barrio")
+
+        assert response.status_code == 200
+        assert response.json()["barrio_recomendado"] in main.BARRIOS
+
+    def test_fallback_when_claude_returns_unknown_barrio(self, client):
+        import main
+        with patch("database.obtener_barrios_recientes", return_value=[]), \
+             patch("api.anthropic_client.messages.create", return_value=self._claude_response("Barrio Fantasma XYZ")):
+            response = client.get("/recomendar-barrio")
+
+        assert response.status_code == 200
+        assert response.json()["barrio_recomendado"] in main.BARRIOS
+
+    def test_razon_is_non_empty_string_on_success(self, client):
+        with patch("database.obtener_barrios_recientes", return_value=[]), \
+             patch("api.anthropic_client.messages.create",
+                   return_value=self._claude_response("Pocitos", "Zona con muchas rotiserías.")):
+            response = client.get("/recomendar-barrio")
+
+        razon = response.json()["razon"]
+        assert isinstance(razon, str)
+        assert len(razon) > 0
+
+    def test_uses_haiku_model(self, client):
+        with patch("database.obtener_barrios_recientes", return_value=[]), \
+             patch("api.anthropic_client.messages.create", return_value=self._claude_response("Pocitos")) as mock_claude:
+            client.get("/recomendar-barrio")
+
+        model = mock_claude.call_args.kwargs["model"]
+        assert "haiku" in model
+
+
 # ── POST /desmarcar-visitado ─────────────────────────────────────────────────
 
 class TestDesmarcarVisitado:

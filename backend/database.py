@@ -183,6 +183,23 @@ def obtener_visitas(negocio_id: int) -> list:
     conn.close()
     return [dict(r) for r in rows]
 
+def obtener_barrios_recientes(n: int = 5) -> list:
+    """Devuelve los últimos N barrios distintos donde se visitaron negocios."""
+    conn = get_conn()
+    cursor = conn.cursor()
+    cursor.execute("""
+        SELECT DISTINCT ON (barrio) barrio, fecha_ultima_visita
+        FROM negocios
+        WHERE visitado = TRUE AND barrio IS NOT NULL
+        ORDER BY barrio, fecha_ultima_visita DESC
+    """)
+    rows = cursor.fetchall()
+    cursor.close()
+    conn.close()
+    # Ordenar por fecha desc y tomar los primeros N
+    rows_sorted = sorted(rows, key=lambda r: r[1] or datetime.min, reverse=True)
+    return [r[0] for r in rows_sorted[:n]]
+
 def resetear_db():
     """Borra todos los registros de la base de datos."""
     conn = get_conn()

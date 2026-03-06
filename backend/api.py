@@ -9,6 +9,8 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, field_validator
+import json
+import random
 import anthropic
 import main
 
@@ -304,6 +306,64 @@ def _confirmar_accion(tool_name: str, tool_input: dict, negocio: dict) -> str:
         msg += f" Nota: \"{notas}\""
     return msg
 
+
+@app.get("/recomendar-barrio")
+def recomendar_barrio(modo: str = "chico"):
+    import random
+    from database import obtener_barrios_recientes
+
+    barrios_recientes = obtener_barrios_recientes(n=5)
+
+    todos = [b for b in main.BARRIOS.keys() if b != "Todo Montevideo"]
+    random.shuffle(todos)
+
+    tipo_cliente = (
+        "negocios chicos como pizzerías, rotiserías, carnicerías, pollerías, supermercados y panaderías"
+        if modo == "chico"
+        else "clientes industriales como frigoríficos, plantas procesadoras, distribuidoras de alimentos y empresas de catering"
+    )
+
+    recientes_texto = (
+        f"Barrios visitados recientemente (preferentemente evitar repetir): {', '.join(barrios_recientes)}"
+        if barrios_recientes
+        else "No hay historial de visitas previas."
+    )
+
+    prompt = f"""Sos un experto en ventas para una distribuidora de pan rallado en Montevideo, Uruguay.
+El vendedor busca nuevos clientes del tipo: {tipo_cliente}.
+
+{recientes_texto}
+
+Lista de barrios disponibles (en orden aleatorio):
+{', '.join(todos)}
+
+Analizando el tipo de actividad comercial y gastronómica de cada zona, recomendá UN SOLO barrio donde haya mayor concentración de este tipo de negocios y por lo tanto más potencial de venta de pan rallado.
+Considerá la densidad comercial, el perfil gastronómico del barrio y la variedad de clientes potenciales.
+Si hay barrios recientemente visitados, priorizá recomendar uno diferente para diversificar la zona de trabajo.
+
+Respondé SOLO con un JSON válido con este formato exacto, sin markdown ni explicaciones adicionales:
+{{"barrio": "nombre exacto del barrio de la lista", "razon": "explicación de 1-2 oraciones en español rioplatense explicando por qué ese barrio tiene potencial"}}"""
+
+    response = anthropic_client.messages.create(
+        model="claude-haiku-4-5-20251001",
+        max_tokens=250,
+        messages=[{"role": "user", "content": prompt}]
+    )
+
+    text = response.content[0].text.strip()
+    try:
+        resultado = json.loads(text)
+        barrio = resultado.get("barrio", "")
+        barrio_match = next((b for b in main.BARRIOS.keys() if b.lower() == barrio.lower()), None)
+        if not barrio_match:
+            barrio_match = todos[0] if todos else "Pocitos"
+        return {
+            "barrio_recomendado": barrio_match,
+            "razon": resultado.get("razon", "")
+        }
+    except json.JSONDecodeError:
+        barrio_match = todos[0] if todos else "Pocitos"
+        return {"barrio_recomendado": barrio_match, "razon": "Zona con buen potencial comercial."}
 
 @app.post("/marcar-visitado")
 def marcar_visitado_endpoint(req: MarcarVisitadoRequest):

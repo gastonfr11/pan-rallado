@@ -281,6 +281,89 @@ class TestObtenerVisitas:
         assert result == []
 
 
+# ── obtener_barrios_recientes ─────────────────────────────────────────────────
+
+class TestObtenerBarriosRecientes:
+    def test_queries_only_visited_negocios_with_barrio(self):
+        import database
+        conn, cursor = _make_db()
+        cursor.fetchall.return_value = []
+
+        with patch("psycopg2.connect", return_value=conn):
+            database.obtener_barrios_recientes()
+
+        sql = cursor.execute.call_args.args[0]
+        assert "visitado = TRUE" in sql
+        assert "barrio IS NOT NULL" in sql
+
+    def test_returns_barrios_sorted_by_date_desc(self):
+        import database
+        conn, cursor = _make_db()
+        cursor.fetchall.return_value = [
+            ("Pocitos",  datetime(2026, 3, 5)),
+            ("Centro",   datetime(2026, 2, 15)),
+            ("Buceo",    datetime(2026, 1, 10)),
+        ]
+
+        with patch("psycopg2.connect", return_value=conn):
+            result = database.obtener_barrios_recientes(n=5)
+
+        assert result[0] == "Pocitos"
+        assert result[1] == "Centro"
+        assert result[2] == "Buceo"
+
+    def test_limits_result_to_n(self):
+        import database
+        conn, cursor = _make_db()
+        cursor.fetchall.return_value = [
+            ("Pocitos", datetime(2026, 3, 5)),
+            ("Centro",  datetime(2026, 3, 4)),
+            ("Buceo",   datetime(2026, 3, 3)),
+            ("Malvín",  datetime(2026, 3, 2)),
+            ("Cordón",  datetime(2026, 3, 1)),
+            ("Prado",   datetime(2026, 2, 28)),
+        ]
+
+        with patch("psycopg2.connect", return_value=conn):
+            result = database.obtener_barrios_recientes(n=3)
+
+        assert len(result) == 3
+        assert result == ["Pocitos", "Centro", "Buceo"]
+
+    def test_returns_empty_list_when_no_visits(self):
+        import database
+        conn, cursor = _make_db()
+        cursor.fetchall.return_value = []
+
+        with patch("psycopg2.connect", return_value=conn):
+            result = database.obtener_barrios_recientes()
+
+        assert result == []
+
+    def test_returns_only_barrio_name_strings(self):
+        import database
+        conn, cursor = _make_db()
+        cursor.fetchall.return_value = [("Pocitos", datetime(2026, 3, 1))]
+
+        with patch("psycopg2.connect", return_value=conn):
+            result = database.obtener_barrios_recientes()
+
+        assert result == ["Pocitos"]
+        assert all(isinstance(b, str) for b in result)
+
+    def test_default_n_is_5(self):
+        import database
+        conn, cursor = _make_db()
+        cursor.fetchall.return_value = [
+            (f"Barrio{i}", datetime(2026, 3, i + 1)) for i in range(8)
+        ]
+
+        with patch("psycopg2.connect", return_value=conn):
+            result = database.obtener_barrios_recientes()
+
+        assert len(result) == 5
+
+
 # ── desmarcar_visitado ───────────────────────────────────────────────────────
 
 class TestDesmarcarVisitado:

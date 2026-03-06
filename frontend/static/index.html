@@ -42,12 +42,23 @@
     <div class="screen active" id="generarScreen">
       <div class="card">
         <div class="card-title">📍 Zona del día</div>
+        <div class="modo-tabs">
+          <button class="modo-tab active" id="tabManual" onclick="setModoBarrio('manual')">Manual</button>
+          <button class="modo-tab" id="tabInteligente" onclick="setModoBarrio('inteligente')">✨ Búsqueda Inteligente</button>
+        </div>
         <div style="display:flex;flex-direction:column;gap:12px;">
-          <div class="field">
-            <label>Barrio</label>
-            <div class="select-wrapper">
-              <select id="barrio"><option value="">Cargando...</option></select>
+          <div id="modoManualFields">
+            <div class="field">
+              <label>Barrio</label>
+              <div class="select-wrapper">
+                <select id="barrio"><option value="">Cargando...</option></select>
+              </div>
             </div>
+          </div>
+          <div id="modoInteligenteFields" style="display:none;flex-direction:column;gap:10px;">
+            <p class="inteligente-desc">Analizamos las zonas de Montevideo y te recomendamos el barrio con más potencial para vender pan rallado según el tipo de cliente.</p>
+            <button class="btn-recomendar" id="btnRecomendar" onclick="recomendarBarrio()">🔍 Analizar y recomendar</button>
+            <div id="recomendacionCard" style="display:none;"></div>
           </div>
           <div class="field">
             <label>Tipo de cliente</label>

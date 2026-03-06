@@ -1,3 +1,58 @@
+// ── BÚSQUEDA INTELIGENTE ──────────────────────────────
+function setModoBarrio(modo) {
+  const manualFields = document.getElementById('modoManualFields');
+  const inteligenteFields = document.getElementById('modoInteligenteFields');
+  const tabManual = document.getElementById('tabManual');
+  const tabInteligente = document.getElementById('tabInteligente');
+
+  if (modo === 'inteligente') {
+    manualFields.style.display = 'none';
+    inteligenteFields.style.display = 'flex';
+    tabManual.classList.remove('active');
+    tabInteligente.classList.add('active');
+  } else {
+    manualFields.style.display = 'block';
+    inteligenteFields.style.display = 'none';
+    tabManual.classList.add('active');
+    tabInteligente.classList.remove('active');
+  }
+}
+
+async function recomendarBarrio() {
+  const modo = document.getElementById('modo').value;
+  const btn = document.getElementById('btnRecomendar');
+  const card = document.getElementById('recomendacionCard');
+
+  btn.disabled = true;
+  btn.textContent = '⏳ Analizando...';
+  card.style.display = 'none';
+
+  try {
+    const res = await fetch(`/recomendar-barrio?modo=${modo}`);
+    const data = await res.json();
+
+    const barrio = data.barrio_recomendado;
+    const razon = data.razon;
+
+    // Pre-seleccionar en el select (para que generarRoadmap funcione igual)
+    const select = document.getElementById('barrio');
+    const option = Array.from(select.options).find(o => o.value === barrio);
+    if (option) select.value = barrio;
+
+    card.style.display = 'block';
+    card.innerHTML = `
+      <div class="recomendacion-card">
+        <div class="recomendacion-barrio">📍 ${barrio}</div>
+        <div class="recomendacion-razon">${razon}</div>
+      </div>`;
+  } catch (e) {
+    showToast('❌ Error al analizar barrios');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '🔍 Analizar y recomendar';
+  }
+}
+
 // ── ROADMAP ───────────────────────────────────────────
 async function generarRoadmap() {
   const barrio = document.getElementById('barrio').value;
