@@ -411,17 +411,6 @@ def obtener_historial_zona(barrios: list, vendedor_id: int = None) -> list:
     return negocios
 
 
-def obtener_visitas(negocio_id: int) -> list:
-    conn = get_conn()
-    cursor = conn.cursor(cursor_factory=RealDictCursor)
-    cursor.execute(
-        "SELECT * FROM visitas WHERE negocio_id = %s ORDER BY fecha DESC",
-        (negocio_id,)
-    )
-    rows = cursor.fetchall()
-    cursor.close()
-    conn.close()
-    return [dict(r) for r in rows]
 
 
 def obtener_barrios_recientes(n: int = 5, vendedor_id: int = None) -> list:

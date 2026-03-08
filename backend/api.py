@@ -524,10 +524,6 @@ def place_details(nombre: str, direccion: str, current_user: dict = Depends(get_
     except Exception:
         return {"telefono": None, "horario": None}
 
-@app.get("/visitas")
-def get_visitas(negocio_id: int, current_user: dict = Depends(get_current_user)):
-    from database import obtener_visitas
-    return {"visitas": obtener_visitas(negocio_id)}
 
 @app.post("/notas")
 def post_nota(req: AgregarNotaRequest, current_user: dict = Depends(get_current_user)):
