@@ -113,7 +113,7 @@ async function cargarDashboard() {
       const action = btn.dataset.action;
       if (action === 'chat')      chatDesdeHistorial(parseInt(btn.dataset.id));
       if (action === 'edit')      editarVisitado(parseInt(btn.dataset.id));
-      if (action === 'desmarcar') desmarcarVisitado(btn.dataset.nombre, btn.dataset.direccion, btn.dataset.vendedorId);
+      if (action === 'desmarcar') desmarcarVisitado(btn.dataset.nombre, btn.dataset.direccion, btn.dataset.vendedorId, btn.dataset.negocioId);
       if (action === 'wpp')       abrirWppDashboard(parseInt(btn.dataset.id));
     };
     lista.onchange = (e) => {
@@ -204,7 +204,7 @@ function _renderCard(n, vendedoresMap) {
           style="background:var(--surface2);border:1px solid var(--border);color:var(--text-mid);padding:9px 14px;border-radius:10px;font-size:0.8rem;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;">
           ✏️ Editar
         </button>
-        <button data-action="desmarcar" data-nombre="${nombreEsc}" data-direccion="${dirEsc}" ${vendedorIdAttr}
+        <button data-action="desmarcar" data-nombre="${nombreEsc}" data-direccion="${dirEsc}" ${vendedorIdAttr} data-negocio-id="${n.id}"
           style="background:rgba(255,77,77,0.08);border:1px solid rgba(255,77,77,0.25);color:#ff4d4d;padding:9px 14px;border-radius:10px;font-size:0.8rem;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;">
           🗑️
         </button>
@@ -239,7 +239,7 @@ async function actualizarEstado(nombre, direccion, nuevoEstado, vendedorId) {
 
 // ── Desmarcar ─────────────────────────────────────────────────────────────────
 
-function desmarcarVisitado(nombre, direccion, vendedorId) {
+function desmarcarVisitado(nombre, direccion, vendedorId, negocioId) {
   const toast = document.getElementById('toast');
   toast.innerHTML = `
     <span>¿Desmarcar "${_esc(nombre)}"?</span>
@@ -256,17 +256,18 @@ function desmarcarVisitado(nombre, direccion, vendedorId) {
   toast.classList.add('show');
   document.getElementById('btnConfirmarDesmarcar').onclick = () => {
     toast.classList.remove('show');
-    confirmarDesmarcar(nombre, direccion, vendedorId);
+    confirmarDesmarcar(nombre, direccion, vendedorId, negocioId);
   };
   document.getElementById('btnCancelarDesmarcar').onclick = () => {
     toast.classList.remove('show');
   };
 }
 
-async function confirmarDesmarcar(nombre, direccion, vendedorId) {
+async function confirmarDesmarcar(nombre, direccion, vendedorId, negocioId) {
   try {
     const body = { nombre, direccion };
-    if (vendedorId) body.vendedor_id = parseInt(vendedorId);
+    if (negocioId) body.negocio_id = parseInt(negocioId);
+    else if (vendedorId) body.vendedor_id = parseInt(vendedorId);
     await apiFetch('/desmarcar-visitado', {
       method: 'POST',
       body: JSON.stringify(body)

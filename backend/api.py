@@ -79,6 +79,7 @@ class DesmarcarVisitadoRequest(BaseModel):
     nombre: str
     direccion: str
     vendedor_id: Optional[int] = None
+    negocio_id: Optional[int] = None
 
 class GenerarMensajeWppRequest(BaseModel):
     negocio: dict
@@ -476,11 +477,15 @@ def marcar_visitado_endpoint(req: MarcarVisitadoRequest, current_user: dict = De
 @app.get("/historial")
 def get_historial(barrio: str = None, current_user: dict = Depends(get_current_user)):
     from database import obtener_historial, obtener_historial_zona
-    # Admin ve todas las visitas; vendedor solo las suyas
-    vendedor_id = None if current_user["rol"] == "admin" else current_user["id"]
-    if barrio == "Todo Montevideo":
-        return {"negocios": obtener_historial_zona(main.BARRIOS_MONTEVIDEO, vendedor_id=vendedor_id)}
-    return {"negocios": obtener_historial(barrio, vendedor_id=vendedor_id)}
+    if current_user["rol"] == "admin":
+        # Admin ve todo sin filtro de barrio ni vendedor
+        barrio_filtro = None if barrio == "Todo Montevideo" else barrio
+        return {"negocios": obtener_historial(barrio_filtro, vendedor_id=None)}
+    else:
+        vendedor_id = current_user["id"]
+        if barrio == "Todo Montevideo":
+            return {"negocios": obtener_historial_zona(main.BARRIOS_MONTEVIDEO, vendedor_id=vendedor_id)}
+        return {"negocios": obtener_historial(barrio, vendedor_id=vendedor_id)}
 
 @app.post("/resetear-db")
 def resetear_db(current_user: dict = Depends(require_admin)):
@@ -517,10 +522,10 @@ def get_visitas(negocio_id: int, current_user: dict = Depends(get_current_user))
 
 @app.post("/desmarcar-visitado")
 def desmarcar_visitado_endpoint(req: DesmarcarVisitadoRequest, current_user: dict = Depends(get_current_user)):
-    from database import desmarcar_visitado as db_desmarcar
-    if current_user["rol"] == "admin" and req.vendedor_id is not None:
-        vendedor_id = req.vendedor_id
+    from database import desmarcar_visitado as db_desmarcar, desmarcar_visitado_por_id
+    if req.negocio_id and current_user["rol"] == "admin":
+        desmarcar_visitado_por_id(req.negocio_id)
     else:
         vendedor_id = current_user["id"]
-    db_desmarcar(req.nombre, req.direccion, vendedor_id=vendedor_id)
+        db_desmarcar(req.nombre, req.direccion, vendedor_id=vendedor_id)
     return {"ok": True}
