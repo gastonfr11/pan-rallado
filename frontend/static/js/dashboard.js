@@ -85,12 +85,23 @@ async function cargarDashboard() {
 
     // Mapa vendedores (solo admin)
     let vendedoresMap = {};
+    const filtroVendedorWrap = document.getElementById('filtroVendedorWrap');
     if (currentUser?.rol === 'admin') {
+      if (filtroVendedorWrap) filtroVendedorWrap.style.display = 'block';
       try {
         const rv = await apiFetch('/admin/usuarios');
         const dv = await rv.json();
+        const selectVendedor = document.getElementById('filtroVendedor');
+        if (selectVendedor) {
+          selectVendedor.innerHTML = '<option value="">Todos los vendedores</option>' +
+            (dv.usuarios || []).map(u =>
+              `<option value="${u.id}" ${String(u.id) === filtroVendedor ? 'selected' : ''}>${_esc(u.nombre)}</option>`
+            ).join('');
+        }
         (dv.usuarios || []).forEach(u => { vendedoresMap[u.id] = u.nombre; });
       } catch (_) {}
+    } else {
+      if (filtroVendedorWrap) filtroVendedorWrap.style.display = 'none';
     }
 
     lista.innerHTML = filtrados.map(n => _renderCard(n, vendedoresMap)).join('');

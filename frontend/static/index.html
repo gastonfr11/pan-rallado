@@ -221,6 +221,13 @@
         <div style="margin-top:10px;">
           <input type="text" id="filtroBusqueda" placeholder="🔍 Buscar por nombre..." oninput="cargarDashboard()">
         </div>
+        <div id="filtroVendedorWrap" style="display:none;margin-top:8px;">
+          <div class="select-wrapper">
+            <select id="filtroVendedor" onchange="cargarDashboard()">
+              <option value="">Todos los vendedores</option>
+            </select>
+          </div>
+        </div>
       </div>
       <div class="stats-row" id="dashboardStats"></div>
       <div id="dashboardLista" style="display:flex;flex-direction:column;gap:10px;"></div>

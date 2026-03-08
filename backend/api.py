@@ -469,7 +469,8 @@ def marcar_visitado_endpoint(req: MarcarVisitadoRequest, current_user: dict = De
 @app.get("/historial")
 def get_historial(barrio: str = None, current_user: dict = Depends(get_current_user)):
     from database import obtener_historial, obtener_historial_zona
-    vendedor_id = current_user["id"]
+    # Admin ve todas las visitas; vendedor solo las suyas
+    vendedor_id = None if current_user["rol"] == "admin" else current_user["id"]
     if barrio == "Todo Montevideo":
         return {"negocios": obtener_historial_zona(main.BARRIOS_MONTEVIDEO, vendedor_id=vendedor_id)}
     return {"negocios": obtener_historial(barrio, vendedor_id=vendedor_id)}
