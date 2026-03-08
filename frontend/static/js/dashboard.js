@@ -292,6 +292,7 @@ async function chatDesdeHistorial(id) {
       tipo: n.tipo_negocio || 'negocio', razon: n.notas || 'Cliente visitado',
       telefono: n.telefono, horario: n.horario, email: n.email,
       tipo_negocio: n.tipo_negocio, nivel_operativo: n.nivel_operativo, notas: n.notas,
+      barrio: n.barrio,
     };
     historialChat = [];
     activarChat(negocioActivo);

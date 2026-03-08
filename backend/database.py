@@ -215,11 +215,22 @@ def marcar_visitado(nombre: str, direccion: str, resultado: str = "visitado", no
                     telefono: str = None, email: str = None, horario: str = None,
                     tipo_negocio: str = None, nivel_operativo: str = None,
                     tiene_rotiseria: bool = False, tiene_produccion_propia: bool = False,
-                    vendedor_id: int = None):
+                    vendedor_id: int = None, barrio: str = None, tipo: str = None):
     conn = get_conn()
     cursor = conn.cursor()
     try:
         ahora = datetime.now()
+
+        # UPSERT: insertar si no existe
+        cursor.execute(
+            "SELECT id FROM negocios WHERE nombre = %s AND direccion = %s AND vendedor_id IS NOT DISTINCT FROM %s",
+            (nombre, direccion, vendedor_id)
+        )
+        if not cursor.fetchone():
+            cursor.execute("""
+                INSERT INTO negocios (nombre, direccion, barrio, tipo, fecha_primera_visita, fecha_ultima_visita, visitado, vendedor_id)
+                VALUES (%s, %s, %s, %s, %s, %s, FALSE, %s)
+            """, (nombre, direccion, barrio, tipo, ahora, ahora, vendedor_id))
 
         fields = ["visitado = TRUE", "fecha_ultima_visita = %s", "resultado = %s"]
         values = [ahora, resultado]

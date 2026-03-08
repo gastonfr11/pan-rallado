@@ -73,7 +73,9 @@ async function guardarVisita() {
     tipo_negocio: document.getElementById('modalTipoNegocio').value || null,
     tiene_rotiseria: document.getElementById('modalRotiseria').checked,
     tiene_produccion_propia: document.getElementById('modalProduccion').checked,
-    notas: document.getElementById('modalNotas').value || ''
+    notas: document.getElementById('modalNotas').value || '',
+    barrio: negocioParaVisitar.barrio || null,
+    tipo: negocioParaVisitar.tipo || null,
   };
 
   try {

@@ -67,6 +67,8 @@ class MarcarVisitadoRequest(BaseModel):
     tiene_rotiseria: bool = False
     tiene_produccion_propia: bool = False
     vendedor_id: Optional[int] = None
+    barrio: Optional[str] = None
+    tipo: Optional[str] = None
 
     @field_validator('telefono', 'email', 'horario', 'tipo_negocio', 'nivel_operativo', mode='before')
     @classmethod
@@ -318,6 +320,8 @@ Cuando el vendedor quiera buscar negocios en un barrio, usá la herramienta busc
                 tipo_negocio=req.negocio.get('tipo_negocio') or req.negocio.get('tipo'),
                 nivel_operativo=req.negocio.get('nivel_operativo'),
                 vendedor_id=vendedor_id,
+                barrio=req.negocio.get('barrio'),
+                tipo=req.negocio.get('tipo'),
             )
             return {
                 "respuesta": _confirmar_accion(tool_name, tool_input, req.negocio),
@@ -470,7 +474,7 @@ def marcar_visitado_endpoint(req: MarcarVisitadoRequest, current_user: dict = De
         req.nombre, req.direccion, req.resultado, req.notas,
         req.telefono, req.email, req.horario, req.tipo_negocio,
         req.nivel_operativo, req.tiene_rotiseria, req.tiene_produccion_propia,
-        vendedor_id=vendedor_id
+        vendedor_id=vendedor_id, barrio=req.barrio, tipo=req.tipo
     )
     return {"ok": True}
 
