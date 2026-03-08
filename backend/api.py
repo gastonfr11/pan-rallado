@@ -77,6 +77,10 @@ class MarcarVisitadoRequest(BaseModel):
             return None
         return v
 
+class AgregarNotaRequest(BaseModel):
+    negocio_id: int
+    texto: str
+
 class DesmarcarVisitadoRequest(BaseModel):
     nombre: str
     direccion: str
@@ -330,16 +334,17 @@ Cuando el vendedor quiera buscar negocios en un barrio, usá la herramienta busc
             }
 
         elif tool_name == "agregar_nota" and req.negocio:
-            from database import marcar_visitado as db_marcar
-            db_marcar(
-                nombre=req.negocio.get('nombre'),
-                direccion=req.negocio.get('direccion'),
-                resultado=req.negocio.get('resultado', 'visitado'),
-                notas=tool_input.get('notas', ''),
-                vendedor_id=vendedor_id,
+            from database import obtener_id_negocio, agregar_nota_db
+            negocio_id = obtener_id_negocio(
+                req.negocio.get('nombre'),
+                req.negocio.get('direccion'),
+                vendedor_id
             )
+            texto = tool_input.get('notas', '')
+            if negocio_id and texto:
+                agregar_nota_db(negocio_id, vendedor_id, texto)
             return {
-                "respuesta": f"✅ Nota guardada: \"{tool_input.get('notas')}\"",
+                "respuesta": f"✅ Nota guardada: \"{texto}\"",
                 "tool_ejecutada": tool_name,
                 "tool_input": tool_input
             }
@@ -523,6 +528,24 @@ def place_details(nombre: str, direccion: str, current_user: dict = Depends(get_
 def get_visitas(negocio_id: int, current_user: dict = Depends(get_current_user)):
     from database import obtener_visitas
     return {"visitas": obtener_visitas(negocio_id)}
+
+@app.post("/notas")
+def post_nota(req: AgregarNotaRequest, current_user: dict = Depends(get_current_user)):
+    from database import agregar_nota_db, obtener_historial
+    # Verificar que el negocio pertenece al usuario (o es admin)
+    negocios = obtener_historial(vendedor_id=None if current_user["rol"] == "admin" else current_user["id"])
+    if not any(n["id"] == req.negocio_id for n in negocios):
+        raise HTTPException(status_code=403, detail="Sin acceso a este negocio")
+    nota_id = agregar_nota_db(req.negocio_id, current_user["id"], req.texto)
+    return {"ok": True, "id": nota_id}
+
+@app.delete("/notas/{nota_id}")
+def delete_nota(nota_id: int, current_user: dict = Depends(get_current_user)):
+    from database import eliminar_nota_db
+    ok = eliminar_nota_db(nota_id, current_user["id"], current_user["rol"] == "admin")
+    if not ok:
+        raise HTTPException(status_code=403, detail="Sin permiso para eliminar esta nota")
+    return {"ok": True}
 
 @app.post("/desmarcar-visitado")
 def desmarcar_visitado_endpoint(req: DesmarcarVisitadoRequest, current_user: dict = Depends(get_current_user)):

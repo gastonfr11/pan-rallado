@@ -185,7 +185,20 @@ function _renderCard(n, vendedoresMap) {
         <div class="dashboard-detalle"><div class="dashboard-detalle-label">Rotisería propia</div><div class="dashboard-detalle-valor">${n.tiene_rotiseria ? '✅ Sí' : '❌ No'}</div></div>
         <div class="dashboard-detalle"><div class="dashboard-detalle-label">Producción propia</div><div class="dashboard-detalle-valor">${n.tiene_produccion_propia ? '✅ Sí' : '❌ No'}</div></div>
         <div class="dashboard-detalle" style="grid-column:1/-1;"><div class="dashboard-detalle-label">Horario</div><div class="dashboard-detalle-valor">${n.horario ? formatearHorario(n.horario) : '—'}</div></div>
-        <div class="dashboard-detalle" style="grid-column:1/-1;"><div class="dashboard-detalle-label">Notas</div><div class="dashboard-detalle-valor">${_esc(n.notas) || '—'}</div></div>
+      </div>
+
+      <div style="margin-top:10px;" id="notas-container-${n.id}">
+        <div style="font-size:0.75rem;color:var(--text-dim);font-weight:600;margin-bottom:6px;">📝 Notas</div>
+        <div id="notas-lista-${n.id}">${_renderNotas(n.notas_lista || [], n.id)}</div>
+        <div style="display:flex;gap:6px;margin-top:6px;">
+          <input type="text" id="notaInput-${n.id}" placeholder="Agregar nota..."
+            style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:7px 10px;color:var(--text);font-size:0.8rem;font-family:'DM Sans',sans-serif;"
+            onkeydown="if(event.key==='Enter') agregarNotaDashboard(${n.id})">
+          <button onclick="agregarNotaDashboard(${n.id})"
+            style="background:var(--accent-dim);border:1px solid rgba(245,166,35,0.3);color:var(--accent);padding:7px 12px;border-radius:8px;font-size:0.8rem;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;">
+            + Agregar
+          </button>
+        </div>
       </div>
 
       <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">
@@ -210,6 +223,65 @@ function _renderCard(n, vendedoresMap) {
         </button>
       </div>
     </div>`;
+}
+
+// ── Notas ─────────────────────────────────────────────────────────────────────
+
+function _renderNotas(notas, negocioId) {
+  if (!notas || !notas.length) {
+    return `<div style="font-size:0.78rem;color:var(--text-dim);padding:4px 0;">Sin notas aún</div>`;
+  }
+  return notas.map(nt => `
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;padding:6px 8px;background:var(--surface2);border-radius:8px;margin-bottom:4px;">
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:0.8rem;color:var(--text);word-break:break-word;">${_esc(nt.texto)}</div>
+        <div style="font-size:0.7rem;color:var(--text-dim);margin-top:2px;">
+          ${nt.vendedor_nombre ? `👤 ${_esc(nt.vendedor_nombre)} · ` : ''}${nt.fecha ? new Date(nt.fecha).toLocaleDateString('es-UY') : ''}
+        </div>
+      </div>
+      <button onclick="eliminarNotaDashboard(${nt.id}, ${negocioId})"
+        style="background:none;border:none;color:#ff6464;cursor:pointer;font-size:0.85rem;padding:2px 4px;flex-shrink:0;" title="Eliminar nota">🗑️</button>
+    </div>`).join('');
+}
+
+async function agregarNotaDashboard(negocioId) {
+  const input = document.getElementById(`notaInput-${negocioId}`);
+  const texto = input?.value?.trim();
+  if (!texto) return;
+  try {
+    const res = await apiFetch('/notas', {
+      method: 'POST',
+      body: JSON.stringify({ negocio_id: negocioId, texto })
+    });
+    if (!res.ok) { mostrarToast('❌ Error al agregar nota'); return; }
+    const data = await res.json();
+    input.value = '';
+    const n = _dashboardNegocios.find(x => x.id === negocioId);
+    if (n) {
+      if (!n.notas_lista) n.notas_lista = [];
+      n.notas_lista.push({ id: data.id, texto, fecha: new Date().toISOString(), vendedor_nombre: currentUser?.nombre, vendedor_id: currentUser?.id });
+      const lista = document.getElementById(`notas-lista-${negocioId}`);
+      if (lista) lista.innerHTML = _renderNotas(n.notas_lista, negocioId);
+    }
+  } catch (e) {
+    mostrarToast('❌ Error al agregar nota');
+  }
+}
+
+async function eliminarNotaDashboard(notaId, negocioId) {
+  try {
+    const res = await apiFetch(`/notas/${notaId}`, { method: 'DELETE' });
+    if (!res.ok) { mostrarToast('❌ Sin permiso'); return; }
+    const n = _dashboardNegocios.find(x => x.id === negocioId);
+    if (n) {
+      n.notas_lista = (n.notas_lista || []).filter(nt => nt.id !== notaId);
+      const lista = document.getElementById(`notas-lista-${negocioId}`);
+      if (lista) lista.innerHTML = _renderNotas(n.notas_lista, negocioId);
+    }
+    mostrarToast('🗑️ Nota eliminada');
+  } catch (e) {
+    mostrarToast('❌ Error al eliminar nota');
+  }
 }
 
 // ── Filtro fecha ──────────────────────────────────────────────────────────────
