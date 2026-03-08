@@ -17,7 +17,7 @@ async function cargarDashboard() {
   try {
     const res  = await apiFetch('/historial?barrio=Todo%20Montevideo');
     const data = await res.json();
-    let negocios = (data.negocios || []).filter(n => n.visitado);
+    let negocios = (data.negocios || []).filter(n => n.visitado && n.resultado !== 'no_interesa');
 
     _dashboardNegocios = negocios;
     window._dashboardNegocios = negocios;
@@ -111,10 +111,11 @@ async function cargarDashboard() {
       const btn = e.target.closest('[data-action]');
       if (!btn) return;
       const action = btn.dataset.action;
-      if (action === 'chat')      chatDesdeHistorial(parseInt(btn.dataset.id));
-      if (action === 'edit')      editarVisitado(parseInt(btn.dataset.id));
-      if (action === 'desmarcar') desmarcarVisitado(btn.dataset.nombre, btn.dataset.direccion, btn.dataset.vendedorId, btn.dataset.negocioId);
-      if (action === 'wpp')       abrirWppDashboard(parseInt(btn.dataset.id));
+      if (action === 'chat')         chatDesdeHistorial(parseInt(btn.dataset.id));
+      if (action === 'toggle-notas') toggleNotas(parseInt(btn.dataset.id));
+      if (action === 'add-nota')     abrirAgregarNota(parseInt(btn.dataset.id));
+      if (action === 'archivar')     archivarNegocio(btn.dataset.nombre, btn.dataset.direccion, btn.dataset.vendedorId, btn.dataset.negocioId);
+      if (action === 'wpp')          abrirWppDashboard(parseInt(btn.dataset.id));
     };
     lista.onchange = (e) => {
       const sel = e.target.closest('[data-action="estado"]');
@@ -187,20 +188,6 @@ function _renderCard(n, vendedoresMap) {
         <div class="dashboard-detalle" style="grid-column:1/-1;"><div class="dashboard-detalle-label">Horario</div><div class="dashboard-detalle-valor">${n.horario ? formatearHorario(n.horario) : '—'}</div></div>
       </div>
 
-      <div style="margin-top:10px;" id="notas-container-${n.id}">
-        <div style="font-size:0.75rem;color:var(--text-dim);font-weight:600;margin-bottom:6px;">📝 Notas</div>
-        <div id="notas-lista-${n.id}">${_renderNotas(n.notas_lista || [], n.id)}</div>
-        <div style="display:flex;gap:6px;margin-top:6px;">
-          <input type="text" id="notaInput-${n.id}" placeholder="Agregar nota..."
-            style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:7px 10px;color:var(--text);font-size:0.8rem;font-family:'DM Sans',sans-serif;"
-            onkeydown="if(event.key==='Enter') agregarNotaDashboard(${n.id})">
-          <button onclick="agregarNotaDashboard(${n.id})"
-            style="background:var(--accent-dim);border:1px solid rgba(245,166,35,0.3);color:var(--accent);padding:7px 12px;border-radius:8px;font-size:0.8rem;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;">
-            + Agregar
-          </button>
-        </div>
-      </div>
-
       <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">
         <select class="dashboard-select-estado" style="flex:1;min-width:120px;"
           data-action="estado" data-nombre="${nombreEsc}" data-direccion="${dirEsc}" ${vendedorIdAttr}>
@@ -213,14 +200,31 @@ function _renderCard(n, vendedoresMap) {
           style="background:var(--accent-dim);border:1px solid rgba(245,166,35,0.3);color:var(--accent);padding:9px 14px;border-radius:10px;font-size:0.8rem;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;">
           💬 Chat
         </button>
-        <button data-action="edit" data-id="${n.id}"
+        <button data-action="toggle-notas" data-id="${n.id}"
           style="background:var(--surface2);border:1px solid var(--border);color:var(--text-mid);padding:9px 14px;border-radius:10px;font-size:0.8rem;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;">
-          ✏️ Editar
+          📝 Notas${(n.notas_lista && n.notas_lista.length) ? ` (${n.notas_lista.length})` : ''}
         </button>
-        <button data-action="desmarcar" data-nombre="${nombreEsc}" data-direccion="${dirEsc}" ${vendedorIdAttr} data-negocio-id="${n.id}"
+        <button data-action="add-nota" data-id="${n.id}"
+          style="background:var(--surface2);border:1px solid var(--border);color:var(--text-mid);padding:9px 14px;border-radius:10px;font-size:0.8rem;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;">
+          ✍️ Agregar nota
+        </button>
+        <button data-action="archivar" data-nombre="${nombreEsc}" data-direccion="${dirEsc}" ${vendedorIdAttr} data-negocio-id="${n.id}"
           style="background:rgba(255,77,77,0.08);border:1px solid rgba(255,77,77,0.25);color:#ff4d4d;padding:9px 14px;border-radius:10px;font-size:0.8rem;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;">
           🗑️
         </button>
+      </div>
+
+      <div style="display:none;margin-top:10px;" id="notas-container-${n.id}">
+        <div id="notas-lista-${n.id}">${_renderNotas(n.notas_lista || [], n.id)}</div>
+        <div style="display:flex;gap:6px;margin-top:6px;">
+          <input type="text" id="notaInput-${n.id}" placeholder="Agregar nota..."
+            style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:7px 10px;color:var(--text);font-size:0.8rem;font-family:'DM Sans',sans-serif;"
+            onkeydown="if(event.key==='Enter') agregarNotaDashboard(${n.id})">
+          <button onclick="agregarNotaDashboard(${n.id})"
+            style="background:var(--accent-dim);border:1px solid rgba(245,166,35,0.3);color:var(--accent);padding:7px 12px;border-radius:8px;font-size:0.8rem;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;">
+            + Agregar
+          </button>
+        </div>
       </div>
     </div>`;
 }
@@ -309,45 +313,56 @@ async function actualizarEstado(nombre, direccion, nuevoEstado, vendedorId) {
   }
 }
 
-// ── Desmarcar ─────────────────────────────────────────────────────────────────
+// ── Toggle notas / Agregar nota ───────────────────────────────────────────────
 
-function desmarcarVisitado(nombre, direccion, vendedorId, negocioId) {
+function toggleNotas(negocioId) {
+  const container = document.getElementById(`notas-container-${negocioId}`);
+  if (!container) return;
+  container.style.display = container.style.display === 'none' ? 'block' : 'none';
+}
+
+function abrirAgregarNota(negocioId) {
+  const container = document.getElementById(`notas-container-${negocioId}`);
+  if (!container) return;
+  container.style.display = 'block';
+  document.getElementById(`notaInput-${negocioId}`)?.focus();
+}
+
+// ── Archivar (No me interesa) ─────────────────────────────────────────────────
+
+function archivarNegocio(nombre, direccion, vendedorId, negocioId) {
   const toast = document.getElementById('toast');
   toast.innerHTML = `
-    <span>¿Desmarcar "${_esc(nombre)}"?</span>
+    <span>¿Archivar "${_esc(nombre)}" como No me interesa?</span>
     <div style="display:flex;gap:8px;margin-top:8px;">
-      <button id="btnConfirmarDesmarcar"
+      <button id="btnConfirmarArchivar"
         style="background:#ff4d4d;border:none;color:#fff;padding:5px 14px;border-radius:8px;font-size:0.8rem;cursor:pointer;font-family:'DM Sans',sans-serif;">
         Confirmar
       </button>
-      <button id="btnCancelarDesmarcar"
+      <button id="btnCancelarArchivar"
         style="background:var(--surface2);border:1px solid var(--border);color:var(--text-mid);padding:5px 14px;border-radius:8px;font-size:0.8rem;cursor:pointer;font-family:'DM Sans',sans-serif;">
         Cancelar
       </button>
     </div>`;
   toast.classList.add('show');
-  document.getElementById('btnConfirmarDesmarcar').onclick = () => {
+  document.getElementById('btnConfirmarArchivar').onclick = () => {
     toast.classList.remove('show');
-    confirmarDesmarcar(nombre, direccion, vendedorId, negocioId);
+    confirmarArchivar(nombre, direccion, vendedorId);
   };
-  document.getElementById('btnCancelarDesmarcar').onclick = () => {
+  document.getElementById('btnCancelarArchivar').onclick = () => {
     toast.classList.remove('show');
   };
 }
 
-async function confirmarDesmarcar(nombre, direccion, vendedorId, negocioId) {
+async function confirmarArchivar(nombre, direccion, vendedorId) {
   try {
-    const body = { nombre, direccion };
-    if (negocioId) body.negocio_id = parseInt(negocioId);
-    else if (vendedorId) body.vendedor_id = parseInt(vendedorId);
-    await apiFetch('/desmarcar-visitado', {
-      method: 'POST',
-      body: JSON.stringify(body)
-    });
-    mostrarToast('↩️ Negocio desmarcado');
+    const body = { nombre, direccion, resultado: 'no_interesa' };
+    if (vendedorId) body.vendedor_id = parseInt(vendedorId);
+    await apiFetch('/marcar-visitado', { method: 'POST', body: JSON.stringify(body) });
+    mostrarToast('🗑️ Archivado como No me interesa');
     cargarDashboard();
   } catch (e) {
-    mostrarToast('❌ Error al desmarcar');
+    mostrarToast('❌ Error al archivar');
   }
 }
 
