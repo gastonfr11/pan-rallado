@@ -66,6 +66,7 @@ class MarcarVisitadoRequest(BaseModel):
     nivel_operativo: Optional[str] = None
     tiene_rotiseria: bool = False
     tiene_produccion_propia: bool = False
+    vendedor_id: Optional[int] = None
 
     @field_validator('telefono', 'email', 'horario', 'tipo_negocio', 'nivel_operativo', mode='before')
     @classmethod
@@ -77,6 +78,7 @@ class MarcarVisitadoRequest(BaseModel):
 class DesmarcarVisitadoRequest(BaseModel):
     nombre: str
     direccion: str
+    vendedor_id: Optional[int] = None
 
 class GenerarMensajeWppRequest(BaseModel):
     negocio: dict
@@ -458,11 +460,16 @@ Respondé SOLO con un JSON válido, sin markdown ni texto adicional:
 @app.post("/marcar-visitado")
 def marcar_visitado_endpoint(req: MarcarVisitadoRequest, current_user: dict = Depends(get_current_user)):
     from database import marcar_visitado as db_marcar
+    # Admin puede editar negocios de cualquier vendedor; usar el vendedor_id del negocio si se provee
+    if current_user["rol"] == "admin" and req.vendedor_id is not None:
+        vendedor_id = req.vendedor_id
+    else:
+        vendedor_id = current_user["id"]
     db_marcar(
         req.nombre, req.direccion, req.resultado, req.notas,
         req.telefono, req.email, req.horario, req.tipo_negocio,
         req.nivel_operativo, req.tiene_rotiseria, req.tiene_produccion_propia,
-        vendedor_id=current_user["id"]
+        vendedor_id=vendedor_id
     )
     return {"ok": True}
 
@@ -511,5 +518,9 @@ def get_visitas(negocio_id: int, current_user: dict = Depends(get_current_user))
 @app.post("/desmarcar-visitado")
 def desmarcar_visitado_endpoint(req: DesmarcarVisitadoRequest, current_user: dict = Depends(get_current_user)):
     from database import desmarcar_visitado as db_desmarcar
-    db_desmarcar(req.nombre, req.direccion, vendedor_id=current_user["id"])
+    if current_user["rol"] == "admin" and req.vendedor_id is not None:
+        vendedor_id = req.vendedor_id
+    else:
+        vendedor_id = current_user["id"]
+    db_desmarcar(req.nombre, req.direccion, vendedor_id=vendedor_id)
     return {"ok": True}

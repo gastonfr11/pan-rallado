@@ -113,13 +113,13 @@ async function cargarDashboard() {
       const action = btn.dataset.action;
       if (action === 'chat')      chatDesdeHistorial(parseInt(btn.dataset.id));
       if (action === 'edit')      editarVisitado(parseInt(btn.dataset.id));
-      if (action === 'desmarcar') desmarcarVisitado(btn.dataset.nombre, btn.dataset.direccion);
+      if (action === 'desmarcar') desmarcarVisitado(btn.dataset.nombre, btn.dataset.direccion, btn.dataset.vendedorId);
       if (action === 'wpp')       abrirWppDashboard(parseInt(btn.dataset.id));
     };
     lista.onchange = (e) => {
       const sel = e.target.closest('[data-action="estado"]');
       if (!sel) return;
-      actualizarEstado(sel.dataset.nombre, sel.dataset.direccion, sel.value);
+      actualizarEstado(sel.dataset.nombre, sel.dataset.direccion, sel.value, sel.dataset.vendedorId);
     };
 
   } catch (err) {
@@ -160,6 +160,8 @@ function _renderCard(n, vendedoresMap) {
     ? `<span style="display:inline-flex;align-items:center;gap:4px;background:rgba(245,166,35,0.1);border:1px solid rgba(245,166,35,0.25);color:var(--accent);padding:3px 8px;border-radius:6px;font-size:0.7rem;font-weight:600;">👤 ${_esc(vendedoresMap[n.vendedor_id])}</span>`
     : '';
 
+  const vendedorIdAttr = n.vendedor_id ? `data-vendedor-id="${n.vendedor_id}"` : '';
+
   return `
     <div style="background:${c.bg};border:1px solid ${c.border};border-radius:14px;padding:14px;">
       <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:10px;">
@@ -188,7 +190,7 @@ function _renderCard(n, vendedoresMap) {
 
       <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">
         <select class="dashboard-select-estado" style="flex:1;min-width:120px;"
-          data-action="estado" data-nombre="${nombreEsc}" data-direccion="${dirEsc}">
+          data-action="estado" data-nombre="${nombreEsc}" data-direccion="${dirEsc}" ${vendedorIdAttr}>
           <option value="visitado"      ${n.resultado === 'visitado'      ? 'selected' : ''}>Visitado</option>
           <option value="interesado"    ${n.resultado === 'interesado'    ? 'selected' : ''}>Interesado</option>
           <option value="cliente"       ${n.resultado === 'cliente'       ? 'selected' : ''}>Cliente</option>
@@ -202,7 +204,7 @@ function _renderCard(n, vendedoresMap) {
           style="background:var(--surface2);border:1px solid var(--border);color:var(--text-mid);padding:9px 14px;border-radius:10px;font-size:0.8rem;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;">
           ✏️ Editar
         </button>
-        <button data-action="desmarcar" data-nombre="${nombreEsc}" data-direccion="${dirEsc}"
+        <button data-action="desmarcar" data-nombre="${nombreEsc}" data-direccion="${dirEsc}" ${vendedorIdAttr}
           style="background:rgba(255,77,77,0.08);border:1px solid rgba(255,77,77,0.25);color:#ff4d4d;padding:9px 14px;border-radius:10px;font-size:0.8rem;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;">
           🗑️
         </button>
@@ -220,11 +222,13 @@ function onFiltroFechaChange() {
 
 // ── Actualizar estado ─────────────────────────────────────────────────────────
 
-async function actualizarEstado(nombre, direccion, nuevoEstado) {
+async function actualizarEstado(nombre, direccion, nuevoEstado, vendedorId) {
   try {
+    const body = { nombre, direccion, resultado: nuevoEstado };
+    if (vendedorId) body.vendedor_id = parseInt(vendedorId);
     await apiFetch('/marcar-visitado', {
       method: 'POST',
-      body: JSON.stringify({ nombre, direccion, resultado: nuevoEstado })
+      body: JSON.stringify(body)
     });
     mostrarToast(`✅ ${nombre} → ${nuevoEstado.replace('_', ' ')}`);
     cargarDashboard();
@@ -235,7 +239,7 @@ async function actualizarEstado(nombre, direccion, nuevoEstado) {
 
 // ── Desmarcar ─────────────────────────────────────────────────────────────────
 
-function desmarcarVisitado(nombre, direccion) {
+function desmarcarVisitado(nombre, direccion, vendedorId) {
   const toast = document.getElementById('toast');
   toast.innerHTML = `
     <span>¿Desmarcar "${_esc(nombre)}"?</span>
@@ -252,18 +256,20 @@ function desmarcarVisitado(nombre, direccion) {
   toast.classList.add('show');
   document.getElementById('btnConfirmarDesmarcar').onclick = () => {
     toast.classList.remove('show');
-    confirmarDesmarcar(nombre, direccion);
+    confirmarDesmarcar(nombre, direccion, vendedorId);
   };
   document.getElementById('btnCancelarDesmarcar').onclick = () => {
     toast.classList.remove('show');
   };
 }
 
-async function confirmarDesmarcar(nombre, direccion) {
+async function confirmarDesmarcar(nombre, direccion, vendedorId) {
   try {
+    const body = { nombre, direccion };
+    if (vendedorId) body.vendedor_id = parseInt(vendedorId);
     await apiFetch('/desmarcar-visitado', {
       method: 'POST',
-      body: JSON.stringify({ nombre, direccion })
+      body: JSON.stringify(body)
     });
     mostrarToast('↩️ Negocio desmarcado');
     cargarDashboard();
