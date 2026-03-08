@@ -114,7 +114,7 @@ async function cargarDashboard() {
       if (action === 'chat')         chatDesdeHistorial(parseInt(btn.dataset.id));
       if (action === 'toggle-notas') toggleNotas(parseInt(btn.dataset.id));
       if (action === 'add-nota')     abrirAgregarNota(parseInt(btn.dataset.id));
-      if (action === 'archivar')     archivarNegocio(btn.dataset.nombre, btn.dataset.direccion, btn.dataset.vendedorId, btn.dataset.negocioId);
+      if (action === 'archivar')     archivarNegocio(btn.dataset.nombre, btn.dataset.direccion, btn.dataset.vendedorId);
       if (action === 'wpp')          abrirWppDashboard(parseInt(btn.dataset.id));
     };
     lista.onchange = (e) => {
@@ -330,7 +330,7 @@ function abrirAgregarNota(negocioId) {
 
 // ── Archivar (No me interesa) ─────────────────────────────────────────────────
 
-function archivarNegocio(nombre, direccion, vendedorId, negocioId) {
+function archivarNegocio(nombre, direccion, vendedorId) {
   const toast = document.getElementById('toast');
   toast.innerHTML = `
     <span>¿Archivar "${_esc(nombre)}" como No me interesa?</span>
