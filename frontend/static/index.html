@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Pan Rallado">
+  <meta name="theme-color" content="#0a0a0a">
+  <title>Pan Rallado</title>
+  <link rel="manifest" href="/static/manifest.json">
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/base.css">
+  <link rel="stylesheet" href="/static/css/components.css">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🥖%3C/text%3E%3C/svg%3E">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+</head>
+<body>
+
+<!-- LOGIN SCREEN -->
+<div id="loginScreen" style="display:flex;position:fixed;inset:0;background:var(--bg);z-index:9999;align-items:center;justify-content:center;padding:24px;">
+  <div class="login-card">
+    <div class="login-logo">🥖</div>
+    <div class="login-title">PAN RALLADO</div>
+    <div class="login-subtitle">Agente de Ventas · Montevideo</div>
+    <div class="login-form">
+      <input type="email" id="loginEmail" placeholder="Email" autocomplete="email"
+        onkeydown="if(event.key==='Enter') document.getElementById('loginPassword').focus()">
+      <input type="password" id="loginPassword" placeholder="Contraseña" autocomplete="current-password"
+        onkeydown="if(event.key==='Enter') iniciarSesion()">
+      <button id="btnLogin" onclick="iniciarSesion()">ENTRAR</button>
+      <div id="loginError" class="login-error"></div>
+    </div>
+  </div>
+</div>
+
+<div id="app" style="display:none;">
+
+  <!-- HEADER -->
+  <div id="header">
+    <div class="logo-icon">🥖</div>
+    <div>
+      <div class="logo-text">PAN RALLADO</div>
+      <div class="tagline">AGENTE DE VENTAS · MONTEVIDEO</div>
+    </div>
+    <div id="userInfo" style="display:none;align-items:center;gap:8px;margin-left:auto;">
+      <span id="userName" class="user-name"></span>
+      <button id="btnAdmin" onclick="abrirAdminDrawer()" style="display:none;background:var(--surface2);border:1px solid var(--border);color:var(--text-mid);padding:6px 10px;border-radius:8px;font-size:0.8rem;cursor:pointer;font-family:'DM Sans',sans-serif;" title="Panel admin">⚙️</button>
+      <button onclick="logout()" class="btn-logout">Salir</button>
+    </div>
+  </div>
+
+  <!-- CONTENT -->
+  <div id="content">
+    <div id="loadingOverlay">
+      <div class="spinner-ring"></div>
+      <div id="loadingText">Buscando negocios...</div>
+    </div>
+
+    <!-- ① GENERAR -->
+    <div class="screen active" id="generarScreen">
+      <div class="card">
+        <div class="card-title">📍 Zona del día</div>
+        <div class="modo-tabs">
+          <button class="modo-tab active" id="tabManual" onclick="setModoBarrio('manual')">Manual</button>
+          <button class="modo-tab" id="tabInteligente" onclick="setModoBarrio('inteligente')">✨ Inteligente</button>
+          <button class="modo-tab" id="tabNombre" onclick="setModoBarrio('nombre')">🔎 Por nombre</button>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:12px;">
+          <div id="modoManualFields">
+            <div class="field">
+              <label>Barrio</label>
+              <div class="select-wrapper">
+                <select id="barrio"><option value="">Cargando...</option></select>
+              </div>
+            </div>
+          </div>
+          <div id="modoInteligenteFields" style="display:none;flex-direction:column;gap:10px;">
+            <p class="inteligente-desc">Analizamos las zonas de Montevideo y te recomendamos el barrio con más potencial para vender pan rallado según el tipo de cliente.</p>
+            <button class="btn-recomendar" id="btnRecomendar" onclick="recomendarBarrio()">🔍 Analizar y recomendar</button>
+            <div id="recomendacionCard" style="display:none;"></div>
+          </div>
+          <div id="modoNombreFields" style="display:none;flex-direction:column;gap:10px;">
+            <div class="field">
+              <label>Nombre del negocio</label>
+              <input type="text" id="busquedaNombre" placeholder="Ej: Bocatti, Pizza Hut..." onkeydown="if(event.key==='Enter') buscarPorNombre()">
+            </div>
+            <div class="field">
+              <label>Zona</label>
+              <div class="select-wrapper">
+                <select id="barrioNombre"></select>
+              </div>
+            </div>
+            <button class="btn-primary" id="btnBuscarNombre" onclick="buscarPorNombre()">🔎 BUSCAR</button>
+          </div>
+          <div class="field">
+            <label>Tipo de cliente</label>
+            <div class="select-wrapper">
+              <select id="modo">
+                <option value="chico">🏪 Clientes chicos</option>
+                <option value="grande">🏭 Clientes grandes</option>
+              </select>
+            </div>
+          </div>
+          <div class="toggle-row">
+            <span class="toggle-label">📲 Enviar por WhatsApp</span>
+            <label class="toggle">
+              <input type="checkbox" id="whatsapp">
+              <div class="toggle-track"></div>
+              <div class="toggle-thumb"></div>
+            </label>
+          </div>
+          <button class="btn-primary" id="btnGenerar" onclick="generarRoadmap()">⚡ GENERAR ROADMAP</button>
+        </div>
+      </div>
+      <div id="statsContainer" style="display:none;">
+        <div class="stats-row" id="statsRow"></div>
+      </div>
+      <div class="empty-state" id="emptyState">
+        <div class="empty-state-icon">🗺️</div>
+        <h3>Sin resultados aún</h3>
+        <p>Elegí un barrio y generá el roadmap del día.</p>
+      </div>
+    </div>
+
+    <!-- ② LISTA -->
+    <div class="screen" id="listaScreen">
+      <div class="empty-state" id="listaEmpty">
+        <div class="empty-state-icon">📋</div>
+        <h3>Sin negocios todavía</h3>
+        <p>Generá un roadmap primero.</p>
+      </div>
+      <div id="listaNegociosContainer" style="display:none;"></div>
+    </div>
+
+    <!-- ③ MAPA -->
+    <div class="screen" id="mapaScreen">
+      <div class="map-container">
+        <div id="mapa"></div>
+        <div class="empty-state" id="mapaEmpty" style="position:absolute;inset:0;background:var(--bg);">
+          <div class="empty-state-icon">🗺️</div>
+          <h3>Sin mapa todavía</h3>
+          <p>Generá un roadmap para ver la ruta.</p>
+        </div>
+      </div>
+      <div class="map-bottom" id="mapChips" style="display:none;"></div>
+    </div>
+
+    <!-- ④ CHAT -->
+    <div class="screen" id="chatScreen">
+      <div class="chat-selector" id="chatSelector" style="display:none;">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
+          <div class="chat-selector-label">Negocio activo</div>
+          <button onclick="activarChat(null)" style="background:none; border:1px solid var(--border); color:var(--text-dim); padding:4px 10px; border-radius:20px; font-size:0.7rem; cursor:pointer; font-family:'DM Sans',sans-serif;">
+            🌐 General
+          </button>
+        </div>
+        <div class="chat-chips" id="chatChips"></div>
+      </div>
+      <div class="chat-empty" id="chatEmpty">
+        <div class="chat-empty-icon">💬</div>
+        <p>Generá un roadmap y seleccioná un negocio para chatear.</p>
+      </div>
+      <div class="chat-messages-area" id="chatMessages" style="display:none;"></div>
+      <div class="quick-actions-bar" id="quickActionsBar" style="display:none;">
+        <button class="quick-btn" onclick="quickAction('¿Qué sabés de este negocio?')">🔍 Info</button>
+        <button class="quick-btn" onclick="quickAction('Generame un mensaje de presentación comercial')">👋 Presentación</button>
+        <button class="quick-btn" onclick="quickAction('Generame un mensaje de seguimiento post-visita')">📋 Seguimiento</button>
+        <button class="quick-btn" onclick="quickAction('Generame un mensaje con una oferta')">🎯 Oferta</button>
+        <button class="quick-btn" onclick="quickAction('Generame un recordatorio de pedido')">🔔 Recordatorio</button>
+      </div>
+      <div class="chat-input-bar" id="chatInputBar" style="display:none;">
+        <button class="btn-mic" id="btnMic" onclick="toggleVoz()">🎤</button>
+        <textarea id="chatInput" placeholder="Preguntá sobre este negocio..." rows="1"
+          onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+        <button class="btn-send" id="btnSend" onclick="enviarMensaje()">➤</button>
+      </div>
+    </div>
+
+    <!-- ⑤ DASHBOARD -->
+    <div class="screen" id="dashboardScreen">
+      <div class="card">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+          <div class="card-title" style="margin:0;">📊 Negocios Visitados</div>
+          <div style="display:flex;gap:8px;">
+            <button onclick="exportarExcel()" style="background:rgba(77,200,100,0.1);border:1px solid rgba(77,200,100,0.3);color:#4dc864;padding:7px 12px;border-radius:8px;font-size:0.75rem;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;">📥 Excel</button>
+            <button onclick="exportarPDF()" style="background:rgba(255,100,100,0.1);border:1px solid rgba(255,100,100,0.3);color:#ff6464;padding:7px 12px;border-radius:8px;font-size:0.75rem;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;">📄 PDF</button>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <div class="select-wrapper" style="flex:1;min-width:140px;">
+            <select id="filtroBarrio" onchange="cargarDashboard()">
+              <option value="">Todos los barrios</option>
+            </select>
+          </div>
+          <div class="select-wrapper" style="flex:1;min-width:140px;">
+            <select id="filtroEstado" onchange="cargarDashboard()">
+              <option value="">Todos los estados</option>
+              <option value="visitado">Visitado</option>
+              <option value="interesado">Interesado</option>
+              <option value="cliente">Cliente</option>
+              <option value="no_interesado">No interesado</option>
+            </select>
+          </div>
+          <div class="select-wrapper" style="flex:1;min-width:140px;">
+            <select id="filtroFecha" onchange="onFiltroFechaChange()">
+              <option value="">Todas las fechas</option>
+              <option value="hoy">Hoy</option>
+              <option value="semana">Esta semana</option>
+              <option value="mes">Este mes</option>
+              <option value="especifica">Día específico</option>
+            </select>
+          </div>
+        </div>
+        <div id="filtroFechaEspecificaWrap" style="display:none;margin-top:8px;">
+          <input type="date" id="filtroFechaEspecifica" oninput="cargarDashboard()" style="width:100%;box-sizing:border-box;">
+        </div>
+        <div style="margin-top:10px;">
+          <input type="text" id="filtroBusqueda" placeholder="🔍 Buscar por nombre..." oninput="cargarDashboard()">
+        </div>
+      </div>
+      <div class="stats-row" id="dashboardStats"></div>
+      <div id="dashboardLista" style="display:flex;flex-direction:column;gap:10px;"></div>
+    </div>
+
+  </div>
+
+  <!-- ADMIN DRAWER -->
+  <div id="adminDrawerBackdrop" onclick="cerrarAdminDrawer()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);backdrop-filter:blur(3px);z-index:400;"></div>
+  <div id="adminDrawer" style="position:fixed;top:0;right:-100%;width:88%;max-width:420px;height:100%;background:var(--surface);border-left:1px solid var(--border);z-index:401;overflow-y:auto;transition:right 0.3s ease;box-shadow:-8px 0 32px rgba(0,0,0,0.5);display:flex;flex-direction:column;">
+    <div style="padding:16px 16px 0;flex-shrink:0;">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding-bottom:16px;border-bottom:1px solid var(--border);">
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:1.3rem;color:var(--accent);letter-spacing:2px;">⚙️ ADMIN</div>
+        <button onclick="cerrarAdminDrawer()" style="background:var(--surface2);border:1px solid var(--border);color:var(--text-mid);padding:6px 12px;border-radius:8px;font-size:0.8rem;cursor:pointer;font-family:'DM Sans',sans-serif;">✕ Cerrar</button>
+      </div>
+    </div>
+    <div style="padding:16px;flex:1;display:flex;flex-direction:column;gap:20px;">
+
+      <!-- Stats por vendedor -->
+      <div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+          <div style="font-size:0.7rem;color:var(--text-mid);text-transform:uppercase;letter-spacing:0.5px;">Estadísticas por vendedor</div>
+          <button onclick="cargarAdminPanel()" style="background:none;border:none;color:var(--text-dim);font-size:0.75rem;cursor:pointer;font-family:'DM Sans',sans-serif;">↻ Actualizar</button>
+        </div>
+        <div id="adminStatsContainer"></div>
+      </div>
+
+      <!-- Lista vendedores -->
+      <div style="border-top:1px solid var(--border);padding-top:16px;">
+        <div style="font-size:0.7rem;color:var(--text-mid);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">Vendedores</div>
+        <div id="adminUsuariosList"></div>
+      </div>
+
+      <!-- Agregar vendedor -->
+      <div style="border-top:1px solid var(--border);padding-top:16px;">
+        <div style="font-size:0.7rem;color:var(--text-mid);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;">Agregar vendedor</div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <input type="text" id="nuevoNombre" placeholder="Nombre">
+          <input type="email" id="nuevoEmail" placeholder="Email">
+          <input type="password" id="nuevoPassword" placeholder="Contraseña">
+          <div id="adminCreateError" class="login-error"></div>
+          <button class="btn-primary" onclick="crearVendedor()">+ AGREGAR VENDEDOR</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- NAV -->
+  <nav id="nav">
+    <button class="nav-btn active" onclick="goTo('generar',this)"><div class="nav-icon">⚡</div><div class="nav-label">Generar</div></button>
+    <button class="nav-btn" onclick="goTo('lista',this)"><div class="nav-icon">📋</div><div class="nav-label">Lista</div></button>
+    <button class="nav-btn" onclick="goTo('mapa',this)"><div class="nav-icon">🗺️</div><div class="nav-label">Mapa</div></button>
+    <button class="nav-btn" onclick="goTo('chat',this)"><div class="nav-icon">💬</div><div class="nav-label">Chat</div></button>
+    <button class="nav-btn" onclick="goTo('dashboard',this)"><div class="nav-icon">📊</div><div class="nav-label">Dashboard</div></button>
+  </nav>
+</div>
+
+<!-- MODAL VISITADO -->
+<div id="modalVisitado">
+  <div class="modal-content">
+    <div class="modal-title">✅ Registrar Visita</div>
+    <div class="modal-negocio-nombre" id="modalNombre"></div>
+    <div class="modal-field">
+      <label>Estado</label>
+      <div class="select-wrapper">
+        <select id="modalEstado">
+          <option value="visitado">Visitado</option>
+          <option value="interesado">Interesado</option>
+          <option value="cliente">Cliente</option>
+          <option value="no_interesado">No interesado</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-row">
+      <div class="modal-field">
+        <label>Teléfono <span class="auto-badge">AUTO</span></label>
+        <input type="text" id="modalTelefono" placeholder="Sin datos">
+      </div>
+      <div class="modal-field">
+        <label>Email</label>
+        <input type="text" id="modalEmail" placeholder="email@negocio.com">
+      </div>
+    </div>
+    <div class="modal-field">
+      <label>Horario <span class="auto-badge">AUTO</span></label>
+      <input type="text" id="modalHorario" placeholder="Sin datos">
+    </div>
+    <div class="modal-row">
+      <div class="modal-field">
+        <label>Tipo de negocio</label>
+        <input type="text" id="modalTipoNegocio" placeholder="Rotisería, Carnicería...">
+      </div>
+      <div class="modal-field">
+        <label>Nivel operativo</label>
+        <div class="select-wrapper">
+          <select id="modalNivel">
+            <option value="">Sin definir</option>
+            <option value="minorista">Minorista</option>
+            <option value="comercial_medio">Comercial medio</option>
+            <option value="elaboracion_fuerte">Elaboración fuerte</option>
+            <option value="industrial">Industrial</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="toggle-field">
+      <label>¿Tiene rotisería propia?</label>
+      <label class="toggle">
+        <input type="checkbox" id="modalRotiseria">
+        <div class="toggle-track"></div>
+        <div class="toggle-thumb"></div>
+      </label>
+    </div>
+    <div class="toggle-field">
+      <label>¿Tiene producción propia?</label>
+      <label class="toggle">
+        <input type="checkbox" id="modalProduccion">
+        <div class="toggle-track"></div>
+        <div class="toggle-thumb"></div>
+      </label>
+    </div>
+    <div class="modal-field">
+      <label>Notas</label>
+      <textarea id="modalNotas" placeholder="Observaciones de la visita..."></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-modal-cancel" onclick="cerrarModal()">CANCELAR</button>
+      <button class="btn-modal-save" onclick="guardarVisita()">GUARDAR</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<!-- JS modules — order matters -->
+<script src="/static/js/state.js"></script>
+<script src="/static/js/utils.js"></script>
+<script src="/static/js/navigation.js"></script>
+<script src="/static/js/mapa.js"></script>
+<script src="/static/js/chat.js"></script>
+<script src="/static/js/visitado.js"></script>
+<script src="/static/js/dashboard.js"></script>
+<script src="/static/js/roadmap.js"></script>
+<script src="/static/js/login.js"></script>
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDYHfHRh3mcxWFNK8l3CvTldIWMLPiuJMY&loading=async"></script>
+</body>
+</html>
