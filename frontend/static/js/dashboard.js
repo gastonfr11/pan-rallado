@@ -3,7 +3,26 @@
 
 let _dashboardNegocios = [];
 
+function _guardarFiltros() {
+  localStorage.setItem('dash_barrio',   document.getElementById('filtroBarrio')?.value || '');
+  localStorage.setItem('dash_estado',   document.getElementById('filtroEstado')?.value || '');
+  localStorage.setItem('dash_fecha',    document.getElementById('filtroFecha')?.value || '');
+  localStorage.setItem('dash_busqueda', document.getElementById('filtroBusqueda')?.value || '');
+  localStorage.setItem('dash_vendedor', document.getElementById('filtroVendedor')?.value || '');
+}
+
+function _restaurarFiltros() {
+  const estadoEl   = document.getElementById('filtroEstado');
+  const fechaEl    = document.getElementById('filtroFecha');
+  const busquedaEl = document.getElementById('filtroBusqueda');
+  if (estadoEl   && !estadoEl.value)   estadoEl.value   = localStorage.getItem('dash_estado')   || '';
+  if (fechaEl    && !fechaEl.value)    fechaEl.value    = localStorage.getItem('dash_fecha')    || '';
+  if (busquedaEl && !busquedaEl.value) busquedaEl.value = localStorage.getItem('dash_busqueda') || '';
+}
+
 async function cargarDashboard() {
+  _restaurarFiltros();
+
   const lista     = document.getElementById('dashboardLista');
   const statsEl   = document.getElementById('dashboardStats');
   const filtroB   = document.getElementById('filtroBarrio');
@@ -11,6 +30,8 @@ async function cargarDashboard() {
   const filtroF   = document.getElementById('filtroFecha').value;
   const busqueda  = document.getElementById('filtroBusqueda')?.value?.toLowerCase() || '';
   const filtroVendedor = document.getElementById('filtroVendedor')?.value || '';
+
+  _guardarFiltros();
 
   lista.innerHTML = '<div style="color:var(--text-dim);padding:20px;text-align:center;font-size:0.85rem;">Cargando...</div>';
 
@@ -24,7 +45,7 @@ async function cargarDashboard() {
 
     // Poblar filtro de barrios
     const barrios = [...new Set(negocios.map(n => n.barrio).filter(Boolean))].sort();
-    const barrioActual = filtroB.value;
+    const barrioActual = filtroB.value || localStorage.getItem('dash_barrio') || '';
     filtroB.innerHTML = '<option value="">Todos los barrios</option>' +
       barrios.map(b => `<option value="${b}" ${b === barrioActual ? 'selected' : ''}>${b}</option>`).join('');
 
