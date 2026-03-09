@@ -45,12 +45,14 @@ def init_db():
         )
     """)
 
+    # Tabla de notas (reemplaza a visitas)
     cursor.execute("""
-        CREATE TABLE IF NOT EXISTS visitas (
+        CREATE TABLE IF NOT EXISTS notas (
             id SERIAL PRIMARY KEY,
             negocio_id INTEGER NOT NULL REFERENCES negocios(id) ON DELETE CASCADE,
-            fecha TIMESTAMP NOT NULL,
-            notas TEXT
+            vendedor_id INTEGER REFERENCES usuarios(id),
+            texto TEXT NOT NULL,
+            fecha TIMESTAMP DEFAULT NOW()
         )
     """)
 
@@ -215,18 +217,26 @@ def marcar_visitado(nombre: str, direccion: str, resultado: str = "visitado", no
                     telefono: str = None, email: str = None, horario: str = None,
                     tipo_negocio: str = None, nivel_operativo: str = None,
                     tiene_rotiseria: bool = False, tiene_produccion_propia: bool = False,
-                    vendedor_id: int = None):
+                    vendedor_id: int = None, barrio: str = None, tipo: str = None):
     conn = get_conn()
     cursor = conn.cursor()
     try:
         ahora = datetime.now()
 
+        # UPSERT: insertar si no existe
+        cursor.execute(
+            "SELECT id FROM negocios WHERE nombre = %s AND direccion = %s AND vendedor_id IS NOT DISTINCT FROM %s",
+            (nombre, direccion, vendedor_id)
+        )
+        if not cursor.fetchone():
+            cursor.execute("""
+                INSERT INTO negocios (nombre, direccion, barrio, tipo, fecha_primera_visita, fecha_ultima_visita, visitado, vendedor_id)
+                VALUES (%s, %s, %s, %s, %s, %s, FALSE, %s)
+            """, (nombre, direccion, barrio, tipo, ahora, ahora, vendedor_id))
+
         fields = ["visitado = TRUE", "fecha_ultima_visita = %s", "resultado = %s"]
         values = [ahora, resultado]
 
-        if notas:
-            fields.append("notas = %s")
-            values.append(notas)
         if telefono is not None:
             fields.append("telefono = %s")
             values.append(telefono)
@@ -262,16 +272,18 @@ def marcar_visitado(nombre: str, direccion: str, resultado: str = "visitado", no
                 WHERE nombre = %s AND direccion = %s
             """, values)
 
-        cursor.execute(
-            "SELECT id FROM negocios WHERE nombre = %s AND direccion = %s AND vendedor_id IS NOT DISTINCT FROM %s",
-            (nombre, direccion, vendedor_id)
-        )
-        row = cursor.fetchone()
-        if row:
+        # Crear nota si se proporcionó texto
+        if notas:
             cursor.execute(
-                "INSERT INTO visitas (negocio_id, fecha, notas) VALUES (%s, %s, %s)",
-                (row[0], ahora, notas or None)
+                "SELECT id FROM negocios WHERE nombre = %s AND direccion = %s AND vendedor_id IS NOT DISTINCT FROM %s",
+                (nombre, direccion, vendedor_id)
             )
+            row = cursor.fetchone()
+            if row:
+                cursor.execute(
+                    "INSERT INTO notas (negocio_id, vendedor_id, texto) VALUES (%s, %s, %s)",
+                    (row[0], vendedor_id, notas)
+                )
 
         conn.commit()
     finally:
@@ -302,6 +314,33 @@ def fue_visitado(nombre: str, direccion: str, vendedor_id: int = None) -> bool:
     return row[0] is True
 
 
+def _cargar_notas(cursor, negocios: list) -> list:
+    """Agrega notas_lista a cada negocio. Usa una sola query para todos."""
+    if not negocios:
+        return negocios
+    ids = [n['id'] for n in negocios]
+    cursor.execute("""
+        SELECT nt.id, nt.negocio_id, nt.texto, nt.fecha, nt.vendedor_id, u.nombre AS vendedor_nombre
+        FROM notas nt
+        LEFT JOIN usuarios u ON u.id = nt.vendedor_id
+        WHERE nt.negocio_id = ANY(%s)
+        ORDER BY nt.fecha ASC
+    """, (ids,))
+    from collections import defaultdict
+    notas_por_negocio = defaultdict(list)
+    for r in cursor.fetchall():
+        notas_por_negocio[r['negocio_id']].append({
+            'id': r['id'],
+            'texto': r['texto'],
+            'fecha': r['fecha'].isoformat() if r['fecha'] else None,
+            'vendedor_id': r['vendedor_id'],
+            'vendedor_nombre': r['vendedor_nombre'],
+        })
+    for n in negocios:
+        n['notas_lista'] = notas_por_negocio[n['id']]
+    return negocios
+
+
 def obtener_historial(barrio: str = None, vendedor_id: int = None) -> list:
     conn = get_conn()
     cursor = conn.cursor(cursor_factory=RealDictCursor)
@@ -324,10 +363,11 @@ def obtener_historial(barrio: str = None, vendedor_id: int = None) -> list:
     else:
         cursor.execute("SELECT * FROM negocios ORDER BY fecha_ultima_visita DESC")
 
-    rows = cursor.fetchall()
+    negocios = [dict(r) for r in cursor.fetchall()]
+    negocios = _cargar_notas(cursor, negocios)
     cursor.close()
     conn.close()
-    return [dict(r) for r in rows]
+    return negocios
 
 
 def obtener_visitados_set(vendedor_id: int = None) -> set:
@@ -364,23 +404,13 @@ def obtener_historial_zona(barrios: list, vendedor_id: int = None) -> list:
             (barrios,)
         )
 
-    rows = cursor.fetchall()
+    negocios = [dict(r) for r in cursor.fetchall()]
+    negocios = _cargar_notas(cursor, negocios)
     cursor.close()
     conn.close()
-    return [dict(r) for r in rows]
+    return negocios
 
 
-def obtener_visitas(negocio_id: int) -> list:
-    conn = get_conn()
-    cursor = conn.cursor(cursor_factory=RealDictCursor)
-    cursor.execute(
-        "SELECT * FROM visitas WHERE negocio_id = %s ORDER BY fecha DESC",
-        (negocio_id,)
-    )
-    rows = cursor.fetchall()
-    cursor.close()
-    conn.close()
-    return [dict(r) for r in rows]
 
 
 def obtener_barrios_recientes(n: int = 5, vendedor_id: int = None) -> list:
@@ -410,6 +440,39 @@ def obtener_barrios_recientes(n: int = 5, vendedor_id: int = None) -> list:
     return [r[0] for r in rows_sorted[:n]]
 
 
+def eliminar_negocio_por_id(negocio_id: int):
+    """Elimina completamente un negocio y sus notas de la DB."""
+    conn = get_conn()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM notas WHERE negocio_id = %s", (negocio_id,))
+    cursor.execute("DELETE FROM negocios WHERE id = %s", (negocio_id,))
+    conn.commit()
+    cursor.close()
+    conn.close()
+
+
+def desmarcar_visitado_por_id(negocio_id: int):
+    conn = get_conn()
+    cursor = conn.cursor()
+    cursor.execute("""
+        UPDATE negocios
+        SET visitado = FALSE,
+            resultado = NULL,
+            fecha_ultima_visita = NULL,
+            telefono = NULL,
+            email = NULL,
+            horario = NULL,
+            tipo_negocio = NULL,
+            nivel_operativo = NULL,
+            tiene_rotiseria = FALSE,
+            tiene_produccion_propia = FALSE
+        WHERE id = %s
+    """, (negocio_id,))
+    conn.commit()
+    cursor.close()
+    conn.close()
+
+
 def resetear_db():
     """Borra todos los registros de negocios."""
     conn = get_conn()
@@ -430,7 +493,6 @@ def desmarcar_visitado(nombre: str, direccion: str, vendedor_id: int = None):
             SET visitado = FALSE,
                 resultado = NULL,
                 fecha_ultima_visita = NULL,
-                notas = NULL,
                 telefono = NULL,
                 email = NULL,
                 horario = NULL,
@@ -446,7 +508,6 @@ def desmarcar_visitado(nombre: str, direccion: str, vendedor_id: int = None):
             SET visitado = FALSE,
                 resultado = NULL,
                 fecha_ultima_visita = NULL,
-                notas = NULL,
                 telefono = NULL,
                 email = NULL,
                 horario = NULL,
@@ -460,3 +521,46 @@ def desmarcar_visitado(nombre: str, direccion: str, vendedor_id: int = None):
     conn.commit()
     cursor.close()
     conn.close()
+
+
+# ── NOTAS ───────────────────────────────────────────────
+
+def agregar_nota_db(negocio_id: int, vendedor_id: int, texto: str) -> int:
+    conn = get_conn()
+    cursor = conn.cursor()
+    cursor.execute(
+        "INSERT INTO notas (negocio_id, vendedor_id, texto) VALUES (%s, %s, %s) RETURNING id",
+        (negocio_id, vendedor_id, texto)
+    )
+    nota_id = cursor.fetchone()[0]
+    conn.commit()
+    cursor.close()
+    conn.close()
+    return nota_id
+
+
+def eliminar_nota_db(nota_id: int, vendedor_id: int, es_admin: bool) -> bool:
+    conn = get_conn()
+    cursor = conn.cursor()
+    if es_admin:
+        cursor.execute("DELETE FROM notas WHERE id = %s", (nota_id,))
+    else:
+        cursor.execute("DELETE FROM notas WHERE id = %s AND vendedor_id = %s", (nota_id, vendedor_id))
+    deleted = cursor.rowcount > 0
+    conn.commit()
+    cursor.close()
+    conn.close()
+    return deleted
+
+
+def obtener_id_negocio(nombre: str, direccion: str, vendedor_id: int = None) -> int | None:
+    conn = get_conn()
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT id FROM negocios WHERE nombre = %s AND direccion = %s AND vendedor_id IS NOT DISTINCT FROM %s",
+        (nombre, direccion, vendedor_id)
+    )
+    row = cursor.fetchone()
+    cursor.close()
+    conn.close()
+    return row[0] if row else None

@@ -60,6 +60,7 @@ async function buscarPorNombre() {
     negociosData = data.resultados;
     resetChat();
     mostrarResultadosBusqueda(data.resultados, q);
+    _guardarBusqueda('nombre', q, document.getElementById('modo').value, data.resultados);
     showToast(`✅ ${data.total} resultado${data.total !== 1 ? 's' : ''} para "${q}"`);
     goTo('lista', document.querySelectorAll('#nav .nav-btn')[1]);
   } catch (e) {
@@ -191,6 +192,7 @@ async function generarRoadmap() {
     negociosData = data.seleccionados;
     resetChat();
     mostrarResultados(data);
+    _guardarBusqueda('roadmap', barrio, modo, data.seleccionados);
     showToast('✅ ' + data.seleccionados.length + ' negocios encontrados');
 
   } catch (e) {
@@ -250,4 +252,105 @@ function mostrarResultados(data) {
   ).join('');
 
   iniciarMapa(data.seleccionados);
+}
+
+// ── BÚSQUEDAS RECIENTES ───────────────────────────────
+const _BR_KEY = 'busquedas_recientes';
+const _BR_TTL = 24 * 60 * 60 * 1000; // 24 horas en ms
+
+function _guardarBusqueda(tipo, label, modo, negocios) {
+  const todas = _cargarBusquedas();
+  // Evitar duplicado exacto reciente (mismo label + modo en últimos 5 min)
+  const hace5min = Date.now() - 5 * 60 * 1000;
+  const duplicado = todas.find(b => b.label === label && b.modo === modo && b.timestamp > hace5min);
+  if (duplicado) return;
+
+  todas.unshift({
+    id: Date.now(),
+    tipo,        // 'roadmap' | 'nombre'
+    label,       // barrio o query
+    modo,
+    negocios,
+    timestamp: Date.now()
+  });
+
+  // Máximo 10 búsquedas guardadas
+  localStorage.setItem(_BR_KEY, JSON.stringify(todas.slice(0, 10)));
+  renderBusquedasRecientes();
+}
+
+function _cargarBusquedas() {
+  try {
+    const raw = localStorage.getItem(_BR_KEY);
+    if (!raw) return [];
+    const todas = JSON.parse(raw);
+    // Filtrar expiradas
+    const vigentes = todas.filter(b => Date.now() - b.timestamp < _BR_TTL);
+    if (vigentes.length !== todas.length) localStorage.setItem(_BR_KEY, JSON.stringify(vigentes));
+    return vigentes;
+  } catch { return []; }
+}
+
+function _eliminarBusqueda(id) {
+  const vigentes = _cargarBusquedas().filter(b => b.id !== id);
+  localStorage.setItem(_BR_KEY, JSON.stringify(vigentes));
+  renderBusquedasRecientes();
+}
+
+function _tiempoRelativo(ts) {
+  const diff = Date.now() - ts;
+  const min  = Math.floor(diff / 60000);
+  const hs   = Math.floor(diff / 3600000);
+  if (min < 1)  return 'hace un momento';
+  if (min < 60) return `hace ${min} min`;
+  if (hs < 24)  return `hace ${hs}h`;
+  return 'hace más de 24h';
+}
+
+function renderBusquedasRecientes() {
+  const contenedor = document.getElementById('busquedasRecientes');
+  if (!contenedor) return;
+  const busquedas = _cargarBusquedas();
+  if (!busquedas.length) { contenedor.innerHTML = ''; return; }
+
+  contenedor.innerHTML = `
+    <div style="margin-top:16px;">
+      <div style="font-size:0.75rem;font-weight:600;color:var(--text-dim);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:10px;">
+        🕐 Búsquedas recientes
+      </div>
+      ${busquedas.map(b => `
+        <div style="display:flex;align-items:center;gap:8px;background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:10px 12px;margin-bottom:8px;cursor:pointer;"
+          onclick="restaurarBusqueda(${b.id})">
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:0.88rem;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+              ${b.tipo === 'roadmap' ? '📍' : '🔎'} ${b.label}
+            </div>
+            <div style="font-size:0.72rem;color:var(--text-dim);margin-top:2px;">
+              ${b.modo === 'chico' ? '🏪 Clientes chicos' : '🏭 Clientes grandes'} · ${b.negocios.length} negocios · ${_tiempoRelativo(b.timestamp)}
+            </div>
+          </div>
+          <button onclick="event.stopPropagation();_eliminarBusqueda(${b.id})"
+            style="background:none;border:none;color:var(--text-dim);font-size:1rem;cursor:pointer;padding:4px;flex-shrink:0;"
+            title="Eliminar">✕</button>
+        </div>
+      `).join('')}
+    </div>`;
+}
+
+function restaurarBusqueda(id) {
+  const b = _cargarBusquedas().find(x => x.id === id);
+  if (!b) return;
+  negociosData = b.negocios;
+  resetChat();
+  if (b.tipo === 'roadmap') {
+    mostrarResultados({
+      seleccionados: b.negocios,
+      total_encontrados: b.negocios.length,
+      distancia_km: null,
+      tiempo_min: null
+    });
+  } else {
+    mostrarResultadosBusqueda(b.negocios, b.label);
+  }
+  goTo('lista', document.querySelectorAll('#nav .nav-btn')[1]);
 }

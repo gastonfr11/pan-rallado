@@ -4,7 +4,7 @@ import os
 from concurrent.futures import ThreadPoolExecutor
 from dotenv import load_dotenv
 from scorer import score_negocios
-from database import init_db, registrar_negocio, obtener_visitados_set
+from database import init_db, obtener_visitados_set
 from router import optimizar_ruta
 from notifier import enviar_roadmap_whatsapp
 
@@ -246,7 +246,7 @@ def generar_roadmap(barrio: str, enviar_whatsapp: bool = False, modo: str = "chi
         seleccionados, distancia_km, tiempo_min = optimizar_ruta(seleccionados)
 
     for n in seleccionados:
-        registrar_negocio(n["nombre"], n["direccion"], barrio, n.get("tipo"), vendedor_id=vendedor_id)
+        n["barrio"] = barrio
 
     if enviar_whatsapp:
         enviar_roadmap_whatsapp(barrio, seleccionados, distancia_km, tiempo_min)

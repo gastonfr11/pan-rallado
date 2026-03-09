@@ -66,6 +66,9 @@ class MarcarVisitadoRequest(BaseModel):
     nivel_operativo: Optional[str] = None
     tiene_rotiseria: bool = False
     tiene_produccion_propia: bool = False
+    vendedor_id: Optional[int] = None
+    barrio: Optional[str] = None
+    tipo: Optional[str] = None
 
     @field_validator('telefono', 'email', 'horario', 'tipo_negocio', 'nivel_operativo', mode='before')
     @classmethod
@@ -74,9 +77,15 @@ class MarcarVisitadoRequest(BaseModel):
             return None
         return v
 
+class AgregarNotaRequest(BaseModel):
+    negocio_id: int
+    texto: str
+
 class DesmarcarVisitadoRequest(BaseModel):
     nombre: str
     direccion: str
+    vendedor_id: Optional[int] = None
+    negocio_id: Optional[int] = None
 
 class GenerarMensajeWppRequest(BaseModel):
     negocio: dict
@@ -315,6 +324,8 @@ Cuando el vendedor quiera buscar negocios en un barrio, usá la herramienta busc
                 tipo_negocio=req.negocio.get('tipo_negocio') or req.negocio.get('tipo'),
                 nivel_operativo=req.negocio.get('nivel_operativo'),
                 vendedor_id=vendedor_id,
+                barrio=req.negocio.get('barrio'),
+                tipo=req.negocio.get('tipo'),
             )
             return {
                 "respuesta": _confirmar_accion(tool_name, tool_input, req.negocio),
@@ -323,16 +334,17 @@ Cuando el vendedor quiera buscar negocios en un barrio, usá la herramienta busc
             }
 
         elif tool_name == "agregar_nota" and req.negocio:
-            from database import marcar_visitado as db_marcar
-            db_marcar(
-                nombre=req.negocio.get('nombre'),
-                direccion=req.negocio.get('direccion'),
-                resultado=req.negocio.get('resultado', 'visitado'),
-                notas=tool_input.get('notas', ''),
-                vendedor_id=vendedor_id,
+            from database import obtener_id_negocio, agregar_nota_db
+            negocio_id = obtener_id_negocio(
+                req.negocio.get('nombre'),
+                req.negocio.get('direccion'),
+                vendedor_id
             )
+            texto = tool_input.get('notas', '')
+            if negocio_id and texto:
+                agregar_nota_db(negocio_id, vendedor_id, texto)
             return {
-                "respuesta": f"✅ Nota guardada: \"{tool_input.get('notas')}\"",
+                "respuesta": f"✅ Nota guardada: \"{texto}\"",
                 "tool_ejecutada": tool_name,
                 "tool_input": tool_input
             }
@@ -458,21 +470,31 @@ Respondé SOLO con un JSON válido, sin markdown ni texto adicional:
 @app.post("/marcar-visitado")
 def marcar_visitado_endpoint(req: MarcarVisitadoRequest, current_user: dict = Depends(get_current_user)):
     from database import marcar_visitado as db_marcar
+    # Admin puede editar negocios de cualquier vendedor; usar el vendedor_id del negocio si se provee
+    if current_user["rol"] == "admin" and req.vendedor_id is not None:
+        vendedor_id = req.vendedor_id
+    else:
+        vendedor_id = current_user["id"]
     db_marcar(
         req.nombre, req.direccion, req.resultado, req.notas,
         req.telefono, req.email, req.horario, req.tipo_negocio,
         req.nivel_operativo, req.tiene_rotiseria, req.tiene_produccion_propia,
-        vendedor_id=current_user["id"]
+        vendedor_id=vendedor_id, barrio=req.barrio, tipo=req.tipo
     )
     return {"ok": True}
 
 @app.get("/historial")
 def get_historial(barrio: str = None, current_user: dict = Depends(get_current_user)):
     from database import obtener_historial, obtener_historial_zona
-    vendedor_id = current_user["id"]
-    if barrio == "Todo Montevideo":
-        return {"negocios": obtener_historial_zona(main.BARRIOS_MONTEVIDEO, vendedor_id=vendedor_id)}
-    return {"negocios": obtener_historial(barrio, vendedor_id=vendedor_id)}
+    if current_user["rol"] == "admin":
+        # Admin ve todo sin filtro de barrio ni vendedor
+        barrio_filtro = None if barrio == "Todo Montevideo" else barrio
+        return {"negocios": obtener_historial(barrio_filtro, vendedor_id=None)}
+    else:
+        vendedor_id = current_user["id"]
+        if barrio == "Todo Montevideo":
+            return {"negocios": obtener_historial_zona(main.BARRIOS_MONTEVIDEO, vendedor_id=vendedor_id)}
+        return {"negocios": obtener_historial(barrio, vendedor_id=vendedor_id)}
 
 @app.post("/resetear-db")
 def resetear_db(current_user: dict = Depends(require_admin)):
@@ -502,13 +524,48 @@ def place_details(nombre: str, direccion: str, current_user: dict = Depends(get_
     except Exception:
         return {"telefono": None, "horario": None}
 
-@app.get("/visitas")
-def get_visitas(negocio_id: int, current_user: dict = Depends(get_current_user)):
-    from database import obtener_visitas
-    return {"visitas": obtener_visitas(negocio_id)}
+
+@app.post("/notas")
+def post_nota(req: AgregarNotaRequest, current_user: dict = Depends(get_current_user)):
+    from database import agregar_nota_db, obtener_historial
+    # Verificar que el negocio pertenece al usuario (o es admin)
+    negocios = obtener_historial(vendedor_id=None if current_user["rol"] == "admin" else current_user["id"])
+    if not any(n["id"] == req.negocio_id for n in negocios):
+        raise HTTPException(status_code=403, detail="Sin acceso a este negocio")
+    nota_id = agregar_nota_db(req.negocio_id, current_user["id"], req.texto)
+    return {"ok": True, "id": nota_id}
+
+@app.delete("/notas/{nota_id}")
+def delete_nota(nota_id: int, current_user: dict = Depends(get_current_user)):
+    from database import eliminar_nota_db
+    ok = eliminar_nota_db(nota_id, current_user["id"], current_user["rol"] == "admin")
+    if not ok:
+        raise HTTPException(status_code=403, detail="Sin permiso para eliminar esta nota")
+    return {"ok": True}
 
 @app.post("/desmarcar-visitado")
 def desmarcar_visitado_endpoint(req: DesmarcarVisitadoRequest, current_user: dict = Depends(get_current_user)):
-    from database import desmarcar_visitado as db_desmarcar
-    db_desmarcar(req.nombre, req.direccion, vendedor_id=current_user["id"])
+    from database import desmarcar_visitado as db_desmarcar, desmarcar_visitado_por_id
+    if req.negocio_id and current_user["rol"] == "admin":
+        desmarcar_visitado_por_id(req.negocio_id)
+    else:
+        vendedor_id = current_user["id"]
+        db_desmarcar(req.nombre, req.direccion, vendedor_id=vendedor_id)
+    return {"ok": True}
+
+@app.delete("/negocios/{negocio_id}")
+def eliminar_negocio(negocio_id: int, current_user: dict = Depends(get_current_user)):
+    from database import eliminar_negocio_por_id, get_conn
+    from psycopg2.extras import RealDictCursor
+    conn = get_conn()
+    cursor = conn.cursor(cursor_factory=RealDictCursor)
+    cursor.execute("SELECT vendedor_id FROM negocios WHERE id = %s", (negocio_id,))
+    row = cursor.fetchone()
+    cursor.close()
+    conn.close()
+    if not row:
+        raise HTTPException(status_code=404, detail="Negocio no encontrado")
+    if current_user["rol"] != "admin" and row["vendedor_id"] != current_user["id"]:
+        raise HTTPException(status_code=403, detail="Sin permiso")
+    eliminar_negocio_por_id(negocio_id)
     return {"ok": True}
