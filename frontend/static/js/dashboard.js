@@ -15,7 +15,7 @@ async function cargarDashboard() {
   lista.innerHTML = '<div style="color:var(--text-dim);padding:20px;text-align:center;font-size:0.85rem;">Cargando...</div>';
 
   try {
-    const res  = await apiFetch('/historial?barrio=Todo%20Montevideo');
+    const res  = await authFetch('/historial?barrio=Todo%20Montevideo');
     const data = await res.json();
     let negocios = (data.negocios || []).filter(n => n.visitado && n.resultado !== 'no_interesa');
 
@@ -89,7 +89,7 @@ async function cargarDashboard() {
     if (currentUser?.rol === 'admin') {
       if (filtroVendedorWrap) filtroVendedorWrap.style.display = 'block';
       try {
-        const rv = await apiFetch('/admin/usuarios');
+        const rv = await authFetch('/admin/usuarios');
         const dv = await rv.json();
         const selectVendedor = document.getElementById('filtroVendedor');
         if (selectVendedor) {
@@ -253,7 +253,7 @@ async function agregarNotaDashboard(negocioId) {
   const texto = input?.value?.trim();
   if (!texto) return;
   try {
-    const res = await apiFetch('/notas', {
+    const res = await authFetch('/notas', {
       method: 'POST',
       body: JSON.stringify({ negocio_id: negocioId, texto })
     });
@@ -274,7 +274,7 @@ async function agregarNotaDashboard(negocioId) {
 
 async function eliminarNotaDashboard(notaId, negocioId) {
   try {
-    const res = await apiFetch(`/notas/${notaId}`, { method: 'DELETE' });
+    const res = await authFetch(`/notas/${notaId}`, { method: 'DELETE' });
     if (!res.ok) { mostrarToast('❌ Sin permiso'); return; }
     const n = _dashboardNegocios.find(x => x.id === negocioId);
     if (n) {
@@ -302,7 +302,7 @@ async function actualizarEstado(nombre, direccion, nuevoEstado, vendedorId) {
   try {
     const body = { nombre, direccion, resultado: nuevoEstado };
     if (vendedorId) body.vendedor_id = parseInt(vendedorId);
-    await apiFetch('/marcar-visitado', {
+    await authFetch('/marcar-visitado', {
       method: 'POST',
       body: JSON.stringify(body)
     });
@@ -358,7 +358,7 @@ async function confirmarArchivar(nombre, direccion, vendedorId) {
   try {
     const body = { nombre, direccion, resultado: 'no_interesa' };
     if (vendedorId) body.vendedor_id = parseInt(vendedorId);
-    await apiFetch('/marcar-visitado', { method: 'POST', body: JSON.stringify(body) });
+    await authFetch('/marcar-visitado', { method: 'POST', body: JSON.stringify(body) });
     mostrarToast('🗑️ Archivado como No me interesa');
     cargarDashboard();
   } catch (e) {
@@ -370,7 +370,7 @@ async function confirmarArchivar(nombre, direccion, vendedorId) {
 
 async function chatDesdeHistorial(id) {
   try {
-    const res  = await apiFetch('/historial?barrio=Todo%20Montevideo');
+    const res  = await authFetch('/historial?barrio=Todo%20Montevideo');
     const data = await res.json();
     const n    = (data.negocios || []).find(x => x.id === id);
     if (!n) return;
@@ -419,7 +419,7 @@ async function abrirWppDashboard(id) {
 // ── Exportar Excel ────────────────────────────────────────────────────────────
 
 async function exportarExcel() {
-  const res  = await apiFetch('/historial?barrio=Todo%20Montevideo');
+  const res  = await authFetch('/historial?barrio=Todo%20Montevideo');
   const data = await res.json();
   const negocios = (data.negocios || []).filter(n => n.visitado);
   const filas = negocios.map(n => ({
@@ -440,7 +440,7 @@ async function exportarExcel() {
 // ── Exportar PDF ──────────────────────────────────────────────────────────────
 
 async function exportarPDF() {
-  const res  = await apiFetch('/historial?barrio=Todo%20Montevideo');
+  const res  = await authFetch('/historial?barrio=Todo%20Montevideo');
   const data = await res.json();
   const negocios = (data.negocios || []).filter(n => n.visitado);
   const { jsPDF } = window.jspdf;
