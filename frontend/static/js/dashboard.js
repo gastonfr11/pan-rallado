@@ -32,6 +32,7 @@ async function cargarDashboard() {
     let filtrados = negocios;
     if (filtroB.value)   filtrados = filtrados.filter(n => n.barrio === filtroB.value);
     if (filtroE)         filtrados = filtrados.filter(n => n.resultado === filtroE);
+    else                 filtrados = filtrados.filter(n => n.resultado !== 'no_interesado');
     if (busqueda)        filtrados = filtrados.filter(n => n.nombre.toLowerCase().includes(busqueda));
 
     // Filtro por vendedor (solo admin)
