@@ -552,3 +552,20 @@ def desmarcar_visitado_endpoint(req: DesmarcarVisitadoRequest, current_user: dic
         vendedor_id = current_user["id"]
         db_desmarcar(req.nombre, req.direccion, vendedor_id=vendedor_id)
     return {"ok": True}
+
+@app.delete("/negocios/{negocio_id}")
+def eliminar_negocio(negocio_id: int, current_user: dict = Depends(get_current_user)):
+    from database import eliminar_negocio_por_id, get_conn
+    from psycopg2.extras import RealDictCursor
+    conn = get_conn()
+    cursor = conn.cursor(cursor_factory=RealDictCursor)
+    cursor.execute("SELECT vendedor_id FROM negocios WHERE id = %s", (negocio_id,))
+    row = cursor.fetchone()
+    cursor.close()
+    conn.close()
+    if not row:
+        raise HTTPException(status_code=404, detail="Negocio no encontrado")
+    if current_user["rol"] != "admin" and row["vendedor_id"] != current_user["id"]:
+        raise HTTPException(status_code=403, detail="Sin permiso")
+    eliminar_negocio_por_id(negocio_id)
+    return {"ok": True}

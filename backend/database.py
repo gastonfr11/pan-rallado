@@ -440,6 +440,17 @@ def obtener_barrios_recientes(n: int = 5, vendedor_id: int = None) -> list:
     return [r[0] for r in rows_sorted[:n]]
 
 
+def eliminar_negocio_por_id(negocio_id: int):
+    """Elimina completamente un negocio y sus notas de la DB."""
+    conn = get_conn()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM notas WHERE negocio_id = %s", (negocio_id,))
+    cursor.execute("DELETE FROM negocios WHERE id = %s", (negocio_id,))
+    conn.commit()
+    cursor.close()
+    conn.close()
+
+
 def desmarcar_visitado_por_id(negocio_id: int):
     conn = get_conn()
     cursor = conn.cursor()

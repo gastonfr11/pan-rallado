@@ -114,7 +114,7 @@ async function cargarDashboard() {
       if (action === 'chat')         chatDesdeHistorial(parseInt(btn.dataset.id));
       if (action === 'toggle-notas') toggleNotas(parseInt(btn.dataset.id));
       if (action === 'add-nota')     abrirAgregarNota(parseInt(btn.dataset.id));
-      if (action === 'archivar')     archivarNegocio(btn.dataset.nombre, btn.dataset.direccion, btn.dataset.vendedorId);
+      if (action === 'archivar')     archivarNegocio(btn.dataset.nombre, btn.dataset.direccion, btn.dataset.vendedorId, parseInt(btn.dataset.negocioId));
       if (action === 'wpp')          abrirWppDashboard(parseInt(btn.dataset.id));
     };
     lista.onchange = (e) => {
@@ -258,7 +258,7 @@ async function agregarNotaDashboard(negocioId) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ negocio_id: negocioId, texto })
     });
-    if (!res.ok) { mostrarToast('❌ Error al agregar nota'); return; }
+    if (!res.ok) { showToast('❌ Error al agregar nota'); return; }
     const data = await res.json();
     input.value = '';
     const n = _dashboardNegocios.find(x => x.id === negocioId);
@@ -269,23 +269,23 @@ async function agregarNotaDashboard(negocioId) {
       if (lista) lista.innerHTML = _renderNotas(n.notas_lista, negocioId);
     }
   } catch (e) {
-    mostrarToast('❌ Error al agregar nota');
+    showToast('❌ Error al agregar nota');
   }
 }
 
 async function eliminarNotaDashboard(notaId, negocioId) {
   try {
     const res = await authFetch(`/notas/${notaId}`, { method: 'DELETE' });
-    if (!res.ok) { mostrarToast('❌ Sin permiso'); return; }
+    if (!res.ok) { showToast('❌ Sin permiso'); return; }
     const n = _dashboardNegocios.find(x => x.id === negocioId);
     if (n) {
       n.notas_lista = (n.notas_lista || []).filter(nt => nt.id !== notaId);
       const lista = document.getElementById(`notas-lista-${negocioId}`);
       if (lista) lista.innerHTML = _renderNotas(n.notas_lista, negocioId);
     }
-    mostrarToast('🗑️ Nota eliminada');
+    showToast('🗑️ Nota eliminada');
   } catch (e) {
-    mostrarToast('❌ Error al eliminar nota');
+    showToast('❌ Error al eliminar nota');
   }
 }
 
@@ -308,10 +308,10 @@ async function actualizarEstado(nombre, direccion, nuevoEstado, vendedorId) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body)
     });
-    mostrarToast(`✅ ${nombre} → ${nuevoEstado.replace('_', ' ')}`);
+    showToast(`✅ ${nombre} → ${nuevoEstado.replace('_', ' ')}`);
     cargarDashboard();
   } catch (e) {
-    mostrarToast('❌ Error al actualizar estado');
+    showToast('❌ Error al actualizar estado');
   }
 }
 
@@ -330,16 +330,16 @@ function abrirAgregarNota(negocioId) {
   document.getElementById(`notaInput-${negocioId}`)?.focus();
 }
 
-// ── Archivar (No me interesa) ─────────────────────────────────────────────────
+// ── Eliminar negocio ──────────────────────────────────────────────────────────
 
-function archivarNegocio(nombre, direccion, vendedorId) {
+function archivarNegocio(nombre, direccion, vendedorId, negocioId) {
   const toast = document.getElementById('toast');
   toast.innerHTML = `
-    <span>¿Archivar "${_esc(nombre)}" como No me interesa?</span>
+    <span>¿Eliminar "${_esc(nombre)}" de la base de datos? El local podrá volver a aparecer en búsquedas.</span>
     <div style="display:flex;gap:8px;margin-top:8px;">
       <button id="btnConfirmarArchivar"
         style="background:#ff4d4d;border:none;color:#fff;padding:5px 14px;border-radius:8px;font-size:0.8rem;cursor:pointer;font-family:'DM Sans',sans-serif;">
-        Confirmar
+        Eliminar
       </button>
       <button id="btnCancelarArchivar"
         style="background:var(--surface2);border:1px solid var(--border);color:var(--text-mid);padding:5px 14px;border-radius:8px;font-size:0.8rem;cursor:pointer;font-family:'DM Sans',sans-serif;">
@@ -349,22 +349,21 @@ function archivarNegocio(nombre, direccion, vendedorId) {
   toast.classList.add('show');
   document.getElementById('btnConfirmarArchivar').onclick = () => {
     toast.classList.remove('show');
-    confirmarArchivar(nombre, direccion, vendedorId);
+    confirmarEliminar(negocioId);
   };
   document.getElementById('btnCancelarArchivar').onclick = () => {
     toast.classList.remove('show');
   };
 }
 
-async function confirmarArchivar(nombre, direccion, vendedorId) {
+async function confirmarEliminar(negocioId) {
   try {
-    const body = { nombre, direccion, resultado: 'no_interesa' };
-    if (vendedorId) body.vendedor_id = parseInt(vendedorId);
-    await authFetch('/marcar-visitado', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-    mostrarToast('🗑️ Archivado como No me interesa');
+    const res = await authFetch(`/negocios/${negocioId}`, { method: 'DELETE' });
+    if (!res.ok) { showToast('❌ Error al eliminar'); return; }
+    showToast('🗑️ Negocio eliminado');
     cargarDashboard();
   } catch (e) {
-    mostrarToast('❌ Error al archivar');
+    showToast('❌ Error al eliminar');
   }
 }
 
@@ -387,7 +386,7 @@ async function chatDesdeHistorial(id) {
     activarChat(negocioActivo);
     goTo('chat', document.querySelectorAll('.nav-btn')[3]);
   } catch (e) {
-    mostrarToast('❌ Error al abrir chat');
+    showToast('❌ Error al abrir chat');
   }
 }
 
@@ -414,7 +413,7 @@ function editarVisitado(id) {
 
 async function abrirWppDashboard(id) {
   const n = window._dashboardNegocios?.find(x => x.id === id);
-  if (!n || !n.telefono) { mostrarToast('❌ Sin teléfono'); return; }
+  if (!n || !n.telefono) { showToast('❌ Sin teléfono'); return; }
   if (typeof abrirModalWpp === 'function') abrirModalWpp(n);
 }
 
