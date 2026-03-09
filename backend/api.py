@@ -231,12 +231,24 @@ def get_barrios(current_user: dict = Depends(get_current_user)):
 
 @app.post("/generar-roadmap")
 def generar_roadmap(req: RoadmapRequest, current_user: dict = Depends(get_current_user)):
-    return main.generar_roadmap(
+    resultado = main.generar_roadmap(
         barrio=req.barrio,
-        enviar_whatsapp=req.enviar_whatsapp,
+        enviar_whatsapp=False,
         modo=req.modo,
         vendedor_id=current_user["id"]
     )
+    if req.enviar_whatsapp and resultado.get("seleccionados"):
+        from notifier import enviar_roadmap_whatsapp
+        try:
+            enviar_roadmap_whatsapp(
+                barrio=req.barrio,
+                negocios=resultado["seleccionados"],
+                distancia=resultado.get("distancia_km"),
+                tiempo=resultado.get("tiempo_min")
+            )
+        except Exception as e:
+            print(f"❌ Error WhatsApp: {e}")
+    return resultado    
 
 @app.post("/generar-mensaje-wpp")
 def generar_mensaje_wpp(req: GenerarMensajeWppRequest, current_user: dict = Depends(get_current_user)):
