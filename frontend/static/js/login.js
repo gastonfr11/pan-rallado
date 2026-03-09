@@ -76,6 +76,7 @@ function mostrarApp(user) {
   if (btnAdmin) btnAdmin.style.display = user.rol === 'admin' ? 'inline-block' : 'none';
 
   cargarBarrios();
+  renderBusquedasRecientes();
 }
 
 function abrirAdminDrawer() {
