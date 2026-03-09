@@ -255,6 +255,7 @@ async function agregarNotaDashboard(negocioId) {
   try {
     const res = await authFetch('/notas', {
       method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ negocio_id: negocioId, texto })
     });
     if (!res.ok) { mostrarToast('❌ Error al agregar nota'); return; }
@@ -304,6 +305,7 @@ async function actualizarEstado(nombre, direccion, nuevoEstado, vendedorId) {
     if (vendedorId) body.vendedor_id = parseInt(vendedorId);
     await authFetch('/marcar-visitado', {
       method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(body)
     });
     mostrarToast(`✅ ${nombre} → ${nuevoEstado.replace('_', ' ')}`);
@@ -358,7 +360,7 @@ async function confirmarArchivar(nombre, direccion, vendedorId) {
   try {
     const body = { nombre, direccion, resultado: 'no_interesa' };
     if (vendedorId) body.vendedor_id = parseInt(vendedorId);
-    await authFetch('/marcar-visitado', { method: 'POST', body: JSON.stringify(body) });
+    await authFetch('/marcar-visitado', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
     mostrarToast('🗑️ Archivado como No me interesa');
     cargarDashboard();
   } catch (e) {
