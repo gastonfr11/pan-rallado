@@ -11018,13 +11018,25 @@ def punto_en_poligono(lat: float, lng: float, poligono: list) -> bool:
 # ---------------------------------------------------------------------------
 BARRIOS_MONTEVIDEO = [
     "Todo Montevideo",
-    "Pocitos", "Punta Carretas", "Parque Rodó", "Palermo", "Cordón",
-    "Centro", "Aguada", "Prado", "Buceo", "Malvín", "Carrasco",
-    "Ciudad Vieja", "Sayago", "Tres Cruces", "La Blanqueada",
-    "Unión", "Cerrito", "Zona Industrial Norte", "Zona Franca",
-    "Parque Industrial", "Piedras Blancas", "Flor de Maroñas",
-    "Bella Italia", "Camino Maldonado", "Ituzaingó", "Las Canteras",
-    "Malvín Norte",
+    # --- Con polígono exacto ---
+    "Aguada", "Aires Puros", "Atahualpa", "Barrio Sur", "Bañados De Carrasco",
+    "Belvedere", "Brazo Oriental", "Buceo", "Capurro Bella Vista", "Carrasco",
+    "Carrasco Norte", "Casabo Pajas Blancas", "Casavalle", "Castro Castellanos",
+    "Centro", "Cerrito", "Cerro", "Ciudad Vieja", "Colon Centro Y Noroeste",
+    "Colon Sureste Abayuba", "Conciliacion", "Cordón", "Figurita",
+    "Flor de Maroñas", "Ituzaingó", "Jacinto Vera", "Jardines Del Hipodromo",
+    "La Blanqueada", "La Comercial", "La Paloma Tomkinson", "La Teja",
+    "Larranaga", "Las Acacias", "Las Canteras", "Lezica Melilla", "Malvín",
+    "Malvín Norte", "Manga", "Manga Toledo Chico", "Maronas Parque Guarani",
+    "Mercado Modelo Y Bolivar", "Nuevo Paris", "Palermo", "Parque Rodó",
+    "Paso De La Arena", "Paso De Las Duranas", "Penarol Lavalleja",
+    "Piedras Blancas", "Pocitos", "Pque Batlle Villa Dolores", "Prado Nueva Savona",
+    "Puerto", "Punta Carretas", "Punta Gorda", "Punta Rieles Bella Italia",
+    "Reducto", "Sayago", "Tres Cruces", "Tres Ombues Pblo Victoria", "Unión",
+    "Villa Espanola", "Villa Garcia Manga Rural", "Villa Muñoz Retiro",
+    # --- Sin polígono (fallback radio circular) ---
+    "Prado", "Zona Industrial Norte", "Zona Franca", "Parque Industrial",
+    "Bella Italia", "Camino Maldonado",
 ]
 
 # Coordenadas centro + radio en metros por barrio (fallback si no hay polígono)
@@ -11153,6 +11165,34 @@ def distancia_km(lat1, lng1, lat2, lng2):
     return R * 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
 
 
+def punto_en_poligono(lat: float, lng: float, poligono: list) -> bool:
+    """Ray-casting. El polígono usa formato GeoJSON: cada punto es [lng, lat]."""
+    n = len(poligono)
+    inside = False
+    j = n - 1
+    for i in range(n):
+        xi, yi = poligono[i][0], poligono[i][1]  # lng, lat
+        xj, yj = poligono[j][0], poligono[j][1]
+        if ((yi > lat) != (yj > lat)) and (lng < (xj - xi) * (lat - yi) / (yj - yi) + xi):
+            inside = not inside
+        j = i
+    return inside
+
+
+def info_desde_poligono(poligono: list) -> dict:
+    """Calcula centroide del bounding box y radio envolvente para usar como bias en Google Maps."""
+    lngs = [p[0] for p in poligono]
+    lats = [p[1] for p in poligono]
+    centro_lat = (min(lats) + max(lats)) / 2
+    centro_lng = (min(lngs) + max(lngs)) / 2
+    radio_km = max(distancia_km(centro_lat, centro_lng, lat, lng) for lat, lng in zip(lats, lngs))
+    return {
+        "lat": centro_lat,
+        "lng": centro_lng,
+        "radio": int(radio_km * 1000 * 1.1),  # metros con 10% de margen
+    }
+
+
 def esta_en_barrio(lugar: dict, barrio: str, info: dict) -> bool:
     """
     Si existe un polígono definido para el barrio lo usa (ray-casting).
@@ -11196,7 +11236,11 @@ def buscar_negocios(barrio: str, modo: str = "chico", vendedor_id: int = None) -
             for c in categorias
         ]
     else:
-        info = BARRIOS.get(barrio)
+        poligono = POLIGONOS.get(barrio)
+        if poligono:
+            info = info_desde_poligono(poligono)
+        else:
+            info = BARRIOS.get(barrio)
         if not info:
             return []
         sufijo = ", Montevideo" if barrio in BARRIOS_MONTEVIDEO else ", Uruguay"
@@ -11289,7 +11333,8 @@ def buscar_negocios(barrio: str, modo: str = "chico", vendedor_id: int = None) -
 
 
 def tiene_negocios(barrio: str, modo: str = "chico", minimo: int = 5) -> bool:
-    info = BARRIOS.get(barrio)
+    poligono = POLIGONOS.get(barrio)
+    info = info_desde_poligono(poligono) if poligono else BARRIOS.get(barrio)
     if not info:
         return False
     categorias = CATEGORIAS_GRANDE if modo == "grande" else CATEGORIAS_CHICO
@@ -11314,7 +11359,8 @@ def buscar_por_nombre(nombre: str, barrio: str = "Todo Montevideo", vendedor_id:
         info = {"lat": -34.9011, "lng": -56.1645, "radio": 15000}
         query = f"{nombre} en Montevideo"
     else:
-        info = BARRIOS.get(barrio)
+        poligono = POLIGONOS.get(barrio)
+        info = info_desde_poligono(poligono) if poligono else BARRIOS.get(barrio)
         if not info:
             return []
         sufijo = ", Montevideo" if barrio in BARRIOS_MONTEVIDEO else ", Uruguay"
