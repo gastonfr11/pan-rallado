@@ -11119,6 +11119,24 @@ OTROS_DEPARTAMENTOS = [
     "Rocha", "Flores", "Florida", "Lavalleja", "Soriano",
 ]
 
+DEPARTAMENTOS = {
+    "Montevideo": ["Todo Montevideo"] + sorted(
+        [b for b in BARRIOS_MONTEVIDEO if b != "Todo Montevideo"]
+    ),
+    "Canelones": sorted([
+        "Aguas Corrientes", "Barros Blancos", "Canelones", "Ciudad de la Costa",
+        "El Bosque", "El Pinar", "Empalme Olmos", "Joaquín Suárez", "Lagomar",
+        "Marindia", "Neptunia", "Nicolich", "Pando", "Paso Carrasco", "Rafael Peraza",
+        "Salinas", "San Bautista", "San Jacinto", "San Ramón", "Santa Lucía",
+        "Sauce", "Scavino", "Shangrilá", "Tala", "Toledo", "Villa Aeroparque",
+        "Villa El Tato",
+    ]),
+    "San José": sorted([
+        "Ciudad del Plata", "Libertad", "Puntas de Valdez", "San José de Mayo",
+        "Santa Rosa", "Villa San José",
+    ]),
+}
+
 CATEGORIAS_CHICO = [
     "pizzerías",
     "rotiserías",

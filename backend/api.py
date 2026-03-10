@@ -227,7 +227,12 @@ def root():
 
 @app.get("/barrios")
 def get_barrios(current_user: dict = Depends(get_current_user)):
-    return {"barrios": list(main.BARRIOS.keys())}
+    todos = list(main.BARRIOS_MONTEVIDEO) + [b for b in main.BARRIOS.keys() if b not in main.BARRIOS_MONTEVIDEO]
+    return {"barrios": todos}
+
+@app.get("/departamentos")
+def get_departamentos(current_user: dict = Depends(get_current_user)):
+    return {"departamentos": {k: main.DEPARTAMENTOS[k] for k in sorted(main.DEPARTAMENTOS)}}
 
 @app.post("/generar-roadmap")
 def generar_roadmap(req: RoadmapRequest, current_user: dict = Depends(get_current_user)):
@@ -364,7 +369,7 @@ Cuando el vendedor quiera buscar negocios en un barrio, usá la herramienta busc
         elif tool_name == "buscar_negocios":
             barrio = tool_input.get('barrio')
             modo = tool_input.get('modo', 'chico')
-            barrios_disponibles = list(main.BARRIOS.keys())
+            barrios_disponibles = list(main.BARRIOS_MONTEVIDEO) + [b for b in main.BARRIOS.keys() if b not in main.BARRIOS_MONTEVIDEO]
             barrio_match = next((b for b in barrios_disponibles if b.lower() == barrio.lower()), None)
             if not barrio_match:
                 return {"respuesta": f"No encontré el barrio \"{barrio}\". Los barrios disponibles son: {', '.join(barrios_disponibles[:10])}..."}
