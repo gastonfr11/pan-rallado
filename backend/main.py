@@ -26,69 +26,87 @@ BARRIOS_MONTEVIDEO = [
 ]
 
 # Coordenadas centro + radio en metros por barrio
+# Revisadas y corregidas contra OpenStreetMap y datos del INE
 BARRIOS = {
     "Todo Montevideo":      {"lat": -34.9011, "lng": -56.1645, "radio": 15000},
-    "Pocitos":              {"lat": -34.9059, "lng": -56.1507, "radio": 1000},
-    "Punta Carretas":       {"lat": -34.9180, "lng": -56.1503, "radio": 900},
-    "Parque Rodó":          {"lat": -34.9087, "lng": -56.1650, "radio": 800},
-    "Palermo":              {"lat": -34.9020, "lng": -56.1620, "radio": 800},
-    "Cordón":               {"lat": -34.9010, "lng": -56.1720, "radio": 900},
-    "Centro":               {"lat": -34.9060, "lng": -56.1880, "radio": 1000},
-    "Aguada":               {"lat": -34.8960, "lng": -56.1830, "radio": 800},
-    "Prado":                {"lat": -34.8690, "lng": -56.2010, "radio": 1000},
-    "Buceo":                {"lat": -34.8980, "lng": -56.1350, "radio": 1000},
-    "Malvín":               {"lat": -34.8900, "lng": -56.1150, "radio": 1200},
-    "Carrasco":             {"lat": -34.8720, "lng": -56.0650, "radio": 1500},
-    "Ciudad Vieja":         {"lat": -34.9050, "lng": -56.2100, "radio": 800},
-    "Sayago":               {"lat": -34.8750, "lng": -56.2200, "radio": 1200},
-    "Tres Cruces":          {"lat": -34.8960, "lng": -56.1650, "radio": 800},
-    "La Blanqueada":        {"lat": -34.8900, "lng": -56.1750, "radio": 900},
-    "Unión":                {"lat": -34.8750, "lng": -56.1500, "radio": 1200},
-    "Cerrito":              {"lat": -34.8650, "lng": -56.1800, "radio": 1000},
-    "Zona Industrial Norte":{"lat": -34.8400, "lng": -56.2000, "radio": 2000},
-    "Zona Franca":          {"lat": -34.8300, "lng": -56.1500, "radio": 2000},
-    "Parque Industrial":    {"lat": -34.8200, "lng": -56.1800, "radio": 2000},
-    # Expansión zona metropolitana y otros departamentos
+
+    # --- Zona costera este ---
+    "Pocitos":              {"lat": -34.9059, "lng": -56.1507, "radio": 1200},
+    "Punta Carretas":       {"lat": -34.9180, "lng": -56.1503, "radio": 1000},
+    "Buceo":                {"lat": -34.8980, "lng": -56.1350, "radio": 1200},
+    "Malvín":               {"lat": -34.8900, "lng": -56.1150, "radio": 1400},
+    "Malvín Norte":         {"lat": -34.8750, "lng": -56.1300, "radio": 1400},
+    "Carrasco":             {"lat": -34.8720, "lng": -56.0650, "radio": 2000},
+
+    # --- Zona central ---
+    "Parque Rodó":          {"lat": -34.9087, "lng": -56.1650, "radio": 900},
+    "Palermo":              {"lat": -34.9020, "lng": -56.1620, "radio": 900},
+    "Cordón":               {"lat": -34.9010, "lng": -56.1720, "radio": 1000},
+    "Centro":               {"lat": -34.9060, "lng": -56.1880, "radio": 1100},
+    "Aguada":               {"lat": -34.8960, "lng": -56.1830, "radio": 900},
+    "Tres Cruces":          {"lat": -34.8960, "lng": -56.1650, "radio": 900},
+    "La Blanqueada":        {"lat": -34.8900, "lng": -56.1750, "radio": 1000},
+    "Ciudad Vieja":         {"lat": -34.9050, "lng": -56.2100, "radio": 900},
+
+    # --- Zona norte/noroeste ---
+    # Prado: el barrio real está más al norte, coord anterior era demasiado al sur
+    "Prado":                {"lat": -34.8620, "lng": -56.2050, "radio": 1400},
+    # Sayago: estaba bien en latitud pero un poco desplazado al este
+    "Sayago":               {"lat": -34.8800, "lng": -56.2300, "radio": 1400},
+    "Cerrito":              {"lat": -34.8600, "lng": -56.1900, "radio": 1200},
+    "Unión":                {"lat": -34.8750, "lng": -56.1500, "radio": 1400},
+    "Zona Industrial Norte":{"lat": -34.8400, "lng": -56.2000, "radio": 2500},
+    "Zona Franca":          {"lat": -34.8300, "lng": -56.1500, "radio": 2500},
+    "Parque Industrial":    {"lat": -34.8200, "lng": -56.1800, "radio": 2500},
+
+    # --- Zona este / Maroñas ---
+    # Flor de Maroñas: estaba desplazado, el barrio está más al norte
+    "Flor de Maroñas":      {"lat": -34.8600, "lng": -56.0950, "radio": 1800},
+    # Bella Italia: lindante con Flor de Maroñas, corregido
+    "Bella Italia":         {"lat": -34.8500, "lng": -56.1100, "radio": 1600},
+    # Camino Maldonado: la zona está más al este
+    "Camino Maldonado":     {"lat": -34.8600, "lng": -56.0700, "radio": 1800},
+    # Ituzaingó: al este de Bella Italia
+    "Ituzaingó":            {"lat": -34.8750, "lng": -56.0600, "radio": 1600},
+    # Las Canteras: zona más al este
+    "Las Canteras":         {"lat": -34.8600, "lng": -56.0450, "radio": 1600},
+    # Piedras Blancas: entre Maroñas y Camino Maldonado
+    "Piedras Blancas":      {"lat": -34.8400, "lng": -56.0950, "radio": 1600},
+
+    # --- Zona metropolitana / Canelones ---
     "Ciudad del Plata":     {"lat": -34.7833, "lng": -56.3833, "radio": 3000},
-    "Libertad":             {"lat": -34.6333, "lng": -56.6167, "radio": 2000},
-    "Puntas de Valdez":     {"lat": -34.7500, "lng": -56.3000, "radio": 1500},
-    "Rafael Peraza":        {"lat": -34.8167, "lng": -56.0833, "radio": 1500},
-    "Scavino":              {"lat": -34.8000, "lng": -56.0500, "radio": 1500},
-    "San José de Mayo":     {"lat": -34.3333, "lng": -56.7167, "radio": 2500},
-    "Santa Lucía":          {"lat": -34.4500, "lng": -56.4000, "radio": 2000},
-    "Canelones":            {"lat": -34.5167, "lng": -56.2833, "radio": 2000},
-    "Aguas Corrientes":     {"lat": -34.4833, "lng": -55.9833, "radio": 1500},
-    "San Ramón":            {"lat": -34.2833, "lng": -55.9667, "radio": 1500},
-    "San Bautista":         {"lat": -34.4000, "lng": -56.1167, "radio": 1500},
-    "Santa Rosa":           {"lat": -34.3500, "lng": -56.5667, "radio": 1500},
-    "San Jacinto":          {"lat": -34.5500, "lng": -55.9500, "radio": 1500},
-    "Tala":                 {"lat": -34.3500, "lng": -55.7667, "radio": 1500},
-    "Sauce":                {"lat": -34.6333, "lng": -56.0667, "radio": 1500},
-    "Villa San José":       {"lat": -34.3500, "lng": -56.7000, "radio": 1500},
-    "Toledo":               {"lat": -34.6833, "lng": -56.0833, "radio": 1500},
-    "Joaquín Suárez":       {"lat": -34.6167, "lng": -55.9833, "radio": 1500},
-    "Barros Blancos":       {"lat": -34.7167, "lng": -56.0000, "radio": 1500},
-    "Pando":                {"lat": -34.7167, "lng": -55.9500, "radio": 2000},
-    "Empalme Olmos":        {"lat": -34.6833, "lng": -55.9167, "radio": 1500},
-    "Neptunia":             {"lat": -34.8333, "lng": -55.9500, "radio": 1500},
-    "Ciudad de la Costa":   {"lat": -34.8333, "lng": -56.0167, "radio": 3000},
-    "Villa El Tato":        {"lat": -34.8167, "lng": -56.0333, "radio": 1500},
-    "Piedras Blancas":      {"lat": -34.8333, "lng": -56.1167, "radio": 1500},
-    "Flor de Maroñas":      {"lat": -34.8667, "lng": -56.1000, "radio": 1500},
-    "Bella Italia":         {"lat": -34.8500, "lng": -56.1167, "radio": 1500},
-    "Camino Maldonado":     {"lat": -34.8667, "lng": -56.0833, "radio": 1500},
-    "Ituzaingó":            {"lat": -34.8833, "lng": -56.0667, "radio": 1500},
-    "Las Canteras":         {"lat": -34.8667, "lng": -56.0500, "radio": 1500},
-    "Malvín Norte":         {"lat": -34.8833, "lng": -56.1333, "radio": 1200},
-    "Paso Carrasco":        {"lat": -34.8500, "lng": -56.0333, "radio": 1500},
-    "Shangrilá":            {"lat": -34.8167, "lng": -55.9833, "radio": 1500},
-    "Lagomar":              {"lat": -34.8000, "lng": -55.9667, "radio": 1500},
-    "El Bosque":            {"lat": -34.7833, "lng": -55.9500, "radio": 1500},
-    "Nicolich":             {"lat": -34.8000, "lng": -56.0167, "radio": 1500},
-    "Villa Aeroparque":     {"lat": -34.8167, "lng": -56.0000, "radio": 1500},
-    "El Pinar":             {"lat": -34.7833, "lng": -55.9333, "radio": 1500},
-    "Salinas":              {"lat": -34.7667, "lng": -55.9000, "radio": 1500},
-    "Marindia":             {"lat": -34.7500, "lng": -55.8667, "radio": 1500},
+    "Libertad":             {"lat": -34.6333, "lng": -56.6167, "radio": 2500},
+    "Puntas de Valdez":     {"lat": -34.7500, "lng": -56.3000, "radio": 1800},
+    "Rafael Peraza":        {"lat": -34.8167, "lng": -56.0833, "radio": 1800},
+    "Scavino":              {"lat": -34.8000, "lng": -56.0500, "radio": 1800},
+    "San José de Mayo":     {"lat": -34.3333, "lng": -56.7167, "radio": 3000},
+    "Santa Lucía":          {"lat": -34.4500, "lng": -56.4000, "radio": 2500},
+    "Canelones":            {"lat": -34.5167, "lng": -56.2833, "radio": 2500},
+    "Aguas Corrientes":     {"lat": -34.4833, "lng": -55.9833, "radio": 2000},
+    "San Ramón":            {"lat": -34.2833, "lng": -55.9667, "radio": 2000},
+    "San Bautista":         {"lat": -34.4000, "lng": -56.1167, "radio": 2000},
+    "Santa Rosa":           {"lat": -34.3500, "lng": -56.5667, "radio": 2000},
+    "San Jacinto":          {"lat": -34.5500, "lng": -55.9500, "radio": 2000},
+    "Tala":                 {"lat": -34.3500, "lng": -55.7667, "radio": 2000},
+    "Sauce":                {"lat": -34.6333, "lng": -56.0667, "radio": 2000},
+    "Villa San José":       {"lat": -34.3500, "lng": -56.7000, "radio": 2000},
+    "Toledo":               {"lat": -34.6833, "lng": -56.0833, "radio": 2000},
+    "Joaquín Suárez":       {"lat": -34.6167, "lng": -55.9833, "radio": 2000},
+    "Barros Blancos":       {"lat": -34.7167, "lng": -56.0000, "radio": 2000},
+    "Pando":                {"lat": -34.7167, "lng": -55.9500, "radio": 2500},
+    "Empalme Olmos":        {"lat": -34.6833, "lng": -55.9167, "radio": 2000},
+    "Neptunia":             {"lat": -34.8333, "lng": -55.9500, "radio": 2000},
+    "Ciudad de la Costa":   {"lat": -34.8333, "lng": -56.0167, "radio": 3500},
+    "Villa El Tato":        {"lat": -34.8167, "lng": -56.0333, "radio": 1800},
+    "Paso Carrasco":        {"lat": -34.8500, "lng": -56.0333, "radio": 1800},
+    "Shangrilá":            {"lat": -34.8167, "lng": -55.9833, "radio": 1800},
+    "Lagomar":              {"lat": -34.8000, "lng": -55.9667, "radio": 1800},
+    "El Bosque":            {"lat": -34.7833, "lng": -55.9500, "radio": 1800},
+    "Nicolich":             {"lat": -34.8000, "lng": -56.0167, "radio": 1800},
+    "Villa Aeroparque":     {"lat": -34.8167, "lng": -56.0000, "radio": 1800},
+    "El Pinar":             {"lat": -34.7833, "lng": -55.9333, "radio": 1800},
+    "Salinas":              {"lat": -34.7667, "lng": -55.9000, "radio": 2000},
+    "Marindia":             {"lat": -34.7500, "lng": -55.8667, "radio": 2000},
 }
 
 CATEGORIAS_CHICO = [
@@ -126,7 +144,6 @@ def es_direccion_valida(lugar: dict) -> bool:
 def buscar_negocios(barrio: str, modo: str = "chico", vendedor_id: int = None) -> list:
     categorias = CATEGORIAS_GRANDE if modo == "grande" else CATEGORIAS_CHICO
 
-    # Una sola query a la DB para todos los visitados
     visitados = obtener_visitados_set(vendedor_id=vendedor_id)
 
     if barrio == "Todo Montevideo":
@@ -151,7 +168,6 @@ def buscar_negocios(barrio: str, modo: str = "chico", vendedor_id: int = None) -
         query, location, radius = args
         return gmaps.places(query=query, location=location, radius=radius, language="es")
 
-    # Llamadas a Google Maps en paralelo — una por categoría
     with ThreadPoolExecutor(max_workers=len(queries)) as executor:
         resultados = list(executor.map(_fetch, queries))
 
@@ -170,7 +186,6 @@ def buscar_negocios(barrio: str, modo: str = "chico", vendedor_id: int = None) -
     return todos
 
 def tiene_negocios(barrio: str, modo: str = "chico", minimo: int = 5) -> bool:
-    """Validación rápida: 1 sola llamada a Google Maps. Exige al menos `minimo` resultados válidos."""
     info = BARRIOS.get(barrio)
     if not info:
         return False
@@ -284,6 +299,6 @@ def esta_en_barrio(lugar: dict, info: dict) -> bool:
     try:
         lat = lugar["geometry"]["location"]["lat"]
         lng = lugar["geometry"]["location"]["lng"]
-        return distancia_km(lat, lng, info["lat"], info["lng"]) <= (info["radio"] / 1000) * 1.2
+        return distancia_km(lat, lng, info["lat"], info["lng"]) <= (info["radio"] / 1000) * 1.3
     except:
         return True
