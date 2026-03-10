@@ -1,6 +1,7 @@
 # backend/api.py
 import sys
 import os
+import re
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from typing import Optional, List
@@ -383,6 +384,11 @@ Cuando el vendedor quiera buscar negocios en un barrio, usá la herramienta busc
             telefono = req.negocio.get('telefono')
             if not telefono:
                 return {"respuesta": "❌ Este negocio no tiene teléfono guardado."}
+            num = telefono.replace(' ', '')
+            es_movil = bool(re.match(r'^09\d', num) or re.match(r'^\+?5989\d', num))
+            if not es_movil:
+                return {"respuesta": "❌ El teléfono registrado no es un número móvil. WhatsApp solo funciona con celulares (09...)."}
+
             return {
                 "respuesta": "📲 Generando mensaje de WhatsApp...",
                 "tool_ejecutada": tool_name,
