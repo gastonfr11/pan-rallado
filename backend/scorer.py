@@ -1,10 +1,12 @@
 # backend/scorer.py
 import anthropic
+import logging
 from dotenv import load_dotenv
 import json
 
 load_dotenv(override=True)
 
+logger = logging.getLogger(__name__)
 client = anthropic.Anthropic()
 
 PROMPT_CHICO = """
@@ -103,6 +105,18 @@ def inferir_tipo(types: list) -> str:
 
     return "Negocio"
 
+def convertir_negocio(negocio: dict, razon: str = "Candidato directo por pool reducido") -> dict:
+    return {
+        "nombre": negocio["name"],
+        "direccion": negocio.get("formatted_address", "Sin dirección"),
+        "razon": razon,
+        "tipo": inferir_tipo(negocio.get("types", [])),
+        "rating": negocio.get("rating", None),
+        "reseñas": negocio.get("user_ratings_total", 0),
+        "lat": negocio["geometry"]["location"]["lat"],
+        "lng": negocio["geometry"]["location"]["lng"],
+    }
+
 def score_negocios(negocios: list, modo: str = "chico") -> list:
     lista_texto = ""
     for i, n in enumerate(negocios):
@@ -139,35 +153,43 @@ El campo "numero" debe ser el número que aparece al inicio de cada línea.
 Seleccioná exactamente 10 negocios ordenados de mayor a menor potencial. Si hay menos de 10, seleccioná todos.
 """
 
-    response = client.messages.create(
-        model="claude-haiku-4-5-20251001",
-        max_tokens=1024,
-        messages=[{"role": "user", "content": prompt}]
-    )
+    def _llamar():
+        response = client.messages.create(
+            model="claude-haiku-4-5-20251001",
+            max_tokens=1024,
+            messages=[{"role": "user", "content": prompt}]
+        )
+        return response.content[0].text.strip()
 
-    contenido = response.content[0].text.strip()
-    if contenido.startswith("```"):
-        contenido = contenido.split("```")[1]
-        if contenido.startswith("json"):
-            contenido = contenido[4:]
-    contenido = contenido.strip()
+    def _parsear(contenido):
+        if contenido.startswith("```"):
+            contenido = contenido.split("```")[1]
+            if contenido.startswith("json"):
+                contenido = contenido[4:]
+        contenido = contenido.strip()
+        resultado = json.loads(contenido)
+        seleccionados = []
+        for item in resultado["seleccionados"]:
+            indice = item["numero"] - 1
+            if 0 <= indice < len(negocios):
+                seleccionados.append(convertir_negocio(negocios[indice], item["razon"]))
+            else:
+                logger.warning(f"Scorer: número inválido {item['numero']} (rango válido: 1-{len(negocios)})")
+        return seleccionados
 
-    resultado = json.loads(contenido)
-    seleccionados = []
+    seleccionados = _parsear(_llamar())
 
-    for item in resultado["seleccionados"]:
-        indice = item["numero"] - 1
-        if 0 <= indice < len(negocios):
-            negocio = negocios[indice]
-            seleccionados.append({
-                "nombre": negocio["name"],
-                "direccion": negocio.get("formatted_address", "Sin dirección"),
-                "razon": item["razon"],
-                "tipo": inferir_tipo(negocio.get("types", [])),
-                "rating": negocio.get("rating", None),
-                "reseñas": negocio.get("user_ratings_total", 0),
-                "lat": negocio["geometry"]["location"]["lat"],
-                "lng": negocio["geometry"]["location"]["lng"],
-            })
+    if len(seleccionados) < 10 and len(negocios) >= 10:
+        logger.warning(f"Scorer devolvió {len(seleccionados)}/10, reintentando...")
+        try:
+            seleccionados_retry = _parsear(_llamar())
+            if len(seleccionados_retry) > len(seleccionados):
+                seleccionados = seleccionados_retry
+                logger.info(f"Reintento exitoso: {len(seleccionados)} negocios")
+            else:
+                logger.warning(f"Reintento no mejoró el resultado ({len(seleccionados_retry)} negocios)")
+        except Exception as e:
+            logger.warning(f"Reintento del scorer falló: {e}")
 
+    logger.info(f"Scorer: {len(seleccionados)} seleccionados de {len(negocios)} candidatos")
     return seleccionados

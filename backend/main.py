@@ -1,12 +1,16 @@
 # backend/main.py
 import googlemaps
 import os
+import time
+import logging
 from concurrent.futures import ThreadPoolExecutor
 from dotenv import load_dotenv
-from scorer import score_negocios
+from scorer import score_negocios, convertir_negocio
 from database import init_db, obtener_visitados_set
 from router import optimizar_ruta
 from notifier import enviar_roadmap_whatsapp
+
+logger = logging.getLogger(__name__)
 
 load_dotenv(override=True)
 init_db()
@@ -61,7 +65,7 @@ BARRIOS = {
 
     # --- Zona este / Maroñas ---
     # Flor de Maroñas: estaba desplazado, el barrio está más al norte
-    "Flor de Maroñas":      {"lat": -34.8600, "lng": -56.0950, "radio": 1800},
+    "Flor de Maroñas":      {"lat": -34.8480, "lng": -56.0980, "radio": 1400},
     # Bella Italia: lindante con Flor de Maroñas, corregido
     "Bella Italia":         {"lat": -34.8500, "lng": -56.1100, "radio": 1600},
     # Camino Maldonado: la zona está más al este
@@ -108,6 +112,12 @@ BARRIOS = {
     "Salinas":              {"lat": -34.7667, "lng": -55.9000, "radio": 2000},
     "Marindia":             {"lat": -34.7500, "lng": -55.8667, "radio": 2000},
 }
+
+# Departamentos que NO son Montevideo — usados para filtrar resultados espurios
+OTROS_DEPARTAMENTOS = [
+    "Canelones", "San José", "Colonia", "Maldonado",
+    "Rocha", "Flores", "Florida", "Lavalleja", "Soriano",
+]
 
 CATEGORIAS_CHICO = [
     "pizzerías",
@@ -166,22 +176,67 @@ def buscar_negocios(barrio: str, modo: str = "chico", vendedor_id: int = None) -
 
     def _fetch(args):
         query, location, radius = args
-        return gmaps.places(query=query, location=location, radius=radius, language="es")
+        resp = gmaps.places(query=query, location=location, radius=radius, language="es")
+        lugares = list(resp.get("results", []))
+        next_token = resp.get("next_page_token")
+        if next_token:
+            time.sleep(2)
+            resp2 = gmaps.places(page_token=next_token, language="es")
+            lugares.extend(resp2.get("results", []))
+        logger.info(f"Query '{query}': {len(lugares)} resultados de Google")
+        return lugares
 
     with ThreadPoolExecutor(max_workers=len(queries)) as executor:
         resultados = list(executor.map(_fetch, queries))
 
     todos = []
     vistos = set()
-    for resultado in resultados:
-        for lugar in resultado["results"]:
+    rechazados_geo = 0
+    rechazados_dept = 0
+    for lugares in resultados:
+        for lugar in lugares:
             nombre = lugar["name"]
             direccion = lugar.get("formatted_address", "")
-            if nombre not in vistos and es_direccion_valida(lugar) and en_barrio_fn(lugar):
+            if nombre not in vistos and es_direccion_valida(lugar):
+                if not en_barrio_fn(lugar):
+                    rechazados_geo += 1
+                    continue
+                if barrio in BARRIOS_MONTEVIDEO and not es_de_region_correcta(lugar):
+                    rechazados_dept += 1
+                    continue
                 if (nombre, direccion) not in visitados:
                     vistos.add(nombre)
                     lugar["_modo"] = modo
                     todos.append(lugar)
+
+    logger.info(
+        f"Barrio '{barrio}': {len(todos)} candidatos "
+        f"(rechazados por geo: {rechazados_geo}, por departamento: {rechazados_dept})"
+    )
+
+    # Nearby Search fallback cuando el pool es bajo
+    if barrio != "Todo Montevideo" and len(todos) < 15:
+        logger.info(f"Pool bajo ({len(todos)}), activando Nearby Search fallback...")
+        tipos_nearby = ["restaurant", "food"]
+        for tipo in tipos_nearby:
+            try:
+                resp_nb = gmaps.places_nearby(
+                    location=(info["lat"], info["lng"]),
+                    radius=info["radio"],
+                    type=tipo,
+                    language="es"
+                )
+                for lugar in resp_nb.get("results", []):
+                    nombre = lugar["name"]
+                    direccion = lugar.get("formatted_address", "")
+                    if nombre not in vistos and es_direccion_valida(lugar) and esta_en_barrio(lugar, info):
+                        if (nombre, direccion) not in visitados:
+                            vistos.add(nombre)
+                            lugar["_modo"] = modo
+                            todos.append(lugar)
+            except Exception as e:
+                logger.warning(f"Nearby Search fallback ({tipo}) falló: {e}")
+        logger.info(f"Pool tras Nearby Search: {len(todos)} candidatos")
 
     return todos
 
@@ -252,7 +307,11 @@ def generar_roadmap(barrio: str, enviar_whatsapp: bool = False, modo: str = "chi
     if not negocios:
         return {"error": "No se encontraron negocios", "barrio": barrio}
 
-    seleccionados = score_negocios(negocios, modo=modo)
+    if len(negocios) <= 10:
+        logger.info(f"Pool reducido ({len(negocios)} candidatos), saltando scorer")
+        seleccionados = [convertir_negocio(n) for n in negocios]
+    else:
+        seleccionados = score_negocios(negocios, modo=modo)
 
     distancia_km = None
     tiempo_min = None
@@ -299,6 +358,14 @@ def esta_en_barrio(lugar: dict, info: dict) -> bool:
     try:
         lat = lugar["geometry"]["location"]["lat"]
         lng = lugar["geometry"]["location"]["lng"]
-        return distancia_km(lat, lng, info["lat"], info["lng"]) <= (info["radio"] / 1000) * 1.3
-    except:
-        return True
+        return distancia_km(lat, lng, info["lat"], info["lng"]) <= (info["radio"] / 1000)
+    except (KeyError, TypeError):
+        return False
+
+def es_de_region_correcta(lugar: dict) -> bool:
+    """Rechaza resultados cuya dirección menciona claramente otro departamento."""
+    direccion = lugar.get("formatted_address", "")
+    for dept in OTROS_DEPARTAMENTOS:
+        if dept in direccion:
+            return False
+    return True
