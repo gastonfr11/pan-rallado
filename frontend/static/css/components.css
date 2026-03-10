@@ -13,6 +13,7 @@
 .negocio-card.ya-visitado { opacity: 0.55; cursor: default; }
 
 /* ── NEGOCIO CARDS ── */
+#listaNegociosContainer { flex-direction: column; gap: 10px; }
 .negocio-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 14px; display: flex; gap: 12px; align-items: flex-start; cursor: pointer; transition: border-color 0.15s, background 0.15s; }
 .negocio-card:active { background: var(--surface2); }
 .negocio-card.activo { border-color: var(--accent); background: var(--accent-dim); }
@@ -69,6 +70,7 @@
 .btn-send:disabled { background: var(--surface2); color: var(--text-dim); }
 
 /* ── DASHBOARD ── */
+#dashboardLista { display: flex; flex-direction: column; gap: 10px; }
 .dashboard-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 14px 16px; }
 .dashboard-card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
 .dashboard-card-nombre { font-size: 0.95rem; font-weight: 600; color: var(--text); margin-bottom: 3px; }
@@ -140,3 +142,48 @@
 .admin-stat-num.barrio { color: #a78bfa; border-color: rgba(167,139,250,0.3); }
 .admin-stat-card { background: var(--bg); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; display: flex; flex-direction: column; gap: 0; margin-bottom: 10px; }
 .admin-stat-card:last-child { margin-bottom: 0; }
+
+/* ── DESKTOP OVERRIDES ── */
+@media (min-width: 768px) {
+  /* Generar screen */
+  #generarScreen { align-items: center; }
+  #generarScreen > * { width: 100%; max-width: 600px; }
+
+  /* Lista de negocios centrada en 2 columnas */
+  #listaScreen { align-items: center; }
+  #listaScreen > * { width: 100%; max-width: 800px; }
+  #listaNegociosContainer {
+    flex-direction: row !important;
+    flex-wrap: wrap !important;
+    align-items: flex-start !important;
+    gap: 10px !important;
+    width: 100%;
+    max-width: 800px;
+  }
+  #listaNegociosContainer .negocio-card {
+    width: calc(50% - 5px);
+    flex-shrink: 0;
+  }
+
+  /* Chat full width con padding lateral */
+  .chat-messages-area { padding: 16px 24px; }
+  .chat-messages-area .msg { max-width: 65%; }
+  .chat-input-bar { padding-bottom: 10px; padding-left: 24px; padding-right: 24px; }
+  .quick-actions-bar { padding-left: 24px; padding-right: 24px; justify-content: center; }
+  .chat-selector { padding: 14px 24px; }
+
+  /* Dashboard */
+  #dashboardScreen { align-items: center; }
+  #dashboardScreen > * { width: 100%; max-width: 900px; }
+  #dashboardLista {
+    max-width: 900px;
+    width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  #dashboardLista .dashboard-card { width: 100%; box-sizing: border-box; }
+  .dashboard-detalles { grid-template-columns: repeat(3, 1fr); }
+
+  /* Mapa: el panel inferior puede ser más ancho */
+  #mapaScreen .map-bottom { padding: 14px 24px; }
+}

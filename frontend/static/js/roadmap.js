@@ -85,8 +85,6 @@ function mostrarResultadosBusqueda(resultados, query) {
   document.getElementById('listaEmpty').style.display = 'none';
   const lc = document.getElementById('listaNegociosContainer');
   lc.style.display = 'flex';
-  lc.style.flexDirection = 'column';
-  lc.style.gap = '10px';
 
   lc.innerHTML = resultados.map((n, i) => `
     <div class="negocio-card${n.ya_visitado ? ' ya-visitado' : ''}" id="card-${i}" onclick="${n.ya_visitado ? '' : `seleccionarNegocio(${i})`}">
@@ -218,8 +216,6 @@ function mostrarResultados(data) {
   document.getElementById('listaEmpty').style.display = 'none';
   const lc = document.getElementById('listaNegociosContainer');
   lc.style.display = 'flex';
-  lc.style.flexDirection = 'column';
-  lc.style.gap = '10px';
 
   lc.innerHTML = data.seleccionados.map((n, i) => `
     <div class="negocio-card" id="card-${i}" onclick="seleccionarNegocio(${i})">
