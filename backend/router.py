@@ -8,7 +8,7 @@ gmaps = googlemaps.Client(key=os.getenv("GOOGLE_MAPS_API_KEY"))
 
 def optimizar_ruta(negocios: list, origen: str = "Tomás Gomensoro 3027, Montevideo, Uruguay") -> list:
     if len(negocios) <= 1:
-        return negocios
+        return negocios, None, None
 
     destinos = [n['direccion'] for n in negocios]
 
@@ -23,11 +23,11 @@ def optimizar_ruta(negocios: list, origen: str = "Tomás Gomensoro 3027, Montevi
         )
     except Exception as e:
         print(f"Error al optimizar ruta: {e}")
-        return negocios
+        return negocios, None, None
 
     if not resultado:
         print("No se pudo optimizar la ruta, se mantiene el orden original")
-        return negocios
+        return negocios, None, None
 
     orden_optimizado = resultado[0]["waypoint_order"]
 

@@ -180,19 +180,23 @@ def buscar_negocios(barrio: str, modo: str = "chico", vendedor_id: int = None) -
         lugares = list(resp.get("results", []))
         next_token = resp.get("next_page_token")
         if next_token:
-            time.sleep(2)
-            for intento in range(3):
+            ultimo_error = None
+            for delay in [2, 4, 8]:
+                time.sleep(delay)
                 try:
                     resp2 = gmaps.places(page_token=next_token, language="es")
                     lugares.extend(resp2.get("results", []))
+                    ultimo_error = None
                     break
                 except Exception as e:
-                    if "INVALID_REQUEST" in str(e) and intento < 2:
-                        logger.warning(f"page_token no listo aún, reintentando en 2s... (intento {intento + 1}/3)")
-                        time.sleep(2)
+                    if "INVALID_REQUEST" in str(e):
+                        ultimo_error = e
+                        logger.warning(f"page_token no listo aún, reintentando en {delay}s... ('{query}')")
                     else:
                         logger.warning(f"Paginación falló para '{query}': {e}")
                         break
+            if ultimo_error:
+                logger.warning(f"Paginación agotó reintentos para '{query}': {ultimo_error}")
         logger.info(f"Query '{query}': {len(lugares)} resultados de Google")
         return lugares
 
