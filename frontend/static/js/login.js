@@ -68,7 +68,7 @@ function mostrarLogin() {
 
 function mostrarApp(user) {
   document.getElementById('loginScreen').style.display = 'none';
-  document.getElementById('app').style.display = 'flex';
+  document.getElementById('app').style.display = '';
   document.getElementById('userInfo').style.display = 'flex';
   document.getElementById('userName').textContent = user.nombre;
 
