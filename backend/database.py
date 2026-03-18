@@ -20,21 +20,28 @@ def _get_pool() -> ThreadedConnectionPool:
         atexit.register(lambda: _pool.closeall())
     return _pool
 
-def get_conn():
-    pool = _get_pool()
-    conn = pool.getconn()
-    # Reemplaza close() para devolver la conexión al pool en vez de cerrarla.
-    # Hace rollback si la conexión tiene una transacción pendiente para evitar
-    # devolver una conexión en estado inválido.
-    def _return_to_pool():
+
+class _PooledConnection:
+    """Wrapper que devuelve la conexión al pool cuando se llama a close()."""
+    def __init__(self, pool: ThreadedConnectionPool, conn):
+        self._pool = pool
+        self._conn = conn
+
+    def __getattr__(self, name):
+        return getattr(self._conn, name)
+
+    def close(self):
         try:
-            if conn.status != psycopg2.extensions.STATUS_READY:
-                conn.rollback()
+            if self._conn.status != psycopg2.extensions.STATUS_READY:
+                self._conn.rollback()
         except Exception:
             pass
-        pool.putconn(conn)
-    conn.close = _return_to_pool
-    return conn
+        self._pool.putconn(self._conn)
+
+
+def get_conn() -> _PooledConnection:
+    pool = _get_pool()
+    return _PooledConnection(pool, pool.getconn())
 
 def init_db():
     conn = get_conn()
