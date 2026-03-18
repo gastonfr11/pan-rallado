@@ -1,4 +1,17 @@
 // ── UTILS ─────────────────────────────────────────────
+
+// Escapa HTML para uso seguro dentro de innerHTML
+function _esc(str) {
+  if (!str) return '';
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// Escapa para uso en atributos HTML (incluye comillas simples)
+function _escAttr(str) {
+  if (!str) return '';
+  return String(str).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
 function showToast(msg) {
   const t = document.getElementById('toast');
   t.textContent = msg;

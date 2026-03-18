@@ -1,14 +1,7 @@
 // ── AUTH ──────────────────────────────────────────────
 async function checkAuth() {
-  const token = localStorage.getItem('authToken');
-  if (!token) {
-    mostrarLogin();
-    return;
-  }
   try {
-    const res = await fetch('/me', {
-      headers: { 'Authorization': `Bearer ${token}` }
-    });
+    const res = await fetch('/me', { credentials: 'include' });
     if (!res.ok) {
       mostrarLogin();
       return;
@@ -47,7 +40,6 @@ async function iniciarSesion() {
       error.textContent = data.detail || 'Error al iniciar sesión';
       return;
     }
-    localStorage.setItem('authToken', data.token);
     currentUser = data.usuario;
     mostrarApp(data.usuario);
   } catch (e) {
@@ -94,8 +86,8 @@ function cerrarAdminDrawer() {
   backdrop.style.display = 'none';
 }
 
-function logout() {
-  localStorage.removeItem('authToken');
+async function logout() {
+  try { await fetch('/logout', { method: 'POST', credentials: 'include' }); } catch (_) {}
   currentUser = null;
   mostrarLogin();
 }
@@ -119,11 +111,16 @@ function renderAdminUsuarios(usuarios) {
   lista.innerHTML = usuarios.map(u => `
     <div class="admin-user-row">
       <div class="admin-user-info">
-        <div class="admin-user-nombre">${u.nombre}</div>
-        <div class="admin-user-email">${u.email} <span class="admin-user-rol rol-${u.rol}">${u.rol}</span></div>
+        <div class="admin-user-nombre">${_esc(u.nombre)}</div>
+        <div class="admin-user-email">${_esc(u.email)} <span class="admin-user-rol rol-${_esc(u.rol)}">${_esc(u.rol)}</span></div>
       </div>
-      ${u.rol !== 'admin' ? `<button class="btn-admin-delete" onclick="eliminarUsuario(${u.id}, '${u.nombre.replace(/'/g, "\\'")}')">✕</button>` : ''}
+      ${u.rol !== 'admin' ? `<button class="btn-admin-delete" data-id="${u.id}" data-nombre="${_escAttr(u.nombre)}">✕</button>` : ''}
     </div>`).join('');
+
+  // Usar event delegation para evitar onclick inline con datos de usuario
+  lista.querySelectorAll('.btn-admin-delete').forEach(btn => {
+    btn.addEventListener('click', () => eliminarUsuario(Number(btn.dataset.id), btn.dataset.nombre));
+  });
 }
 
 function renderAdminStats(stats) {
@@ -145,11 +142,11 @@ function renderAdminStats(stats) {
     <div class="admin-stat-card" id="statCard-${s.id}">
       <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;">
         <div>
-          <div class="admin-stat-nombre">${s.nombre}</div>
-          <div style="font-size:0.72rem;color:var(--text-dim);margin-top:1px;">${s.email}</div>
+          <div class="admin-stat-nombre">${_esc(s.nombre)}</div>
+          <div style="font-size:0.72rem;color:var(--text-dim);margin-top:1px;">${_esc(s.email)}</div>
         </div>
         <button
-          onclick="toggleNegociosVendedor(${s.id}, '${s.nombre.replace(/'/g, "\\'")}')"
+          data-vendedor-id="${s.id}" data-vendedor-nombre="${_escAttr(s.nombre)}"
           id="btnToggle-${s.id}"
           style="flex-shrink:0;background:var(--surface2);border:1px solid var(--border);color:var(--text-mid);padding:4px 10px;border-radius:8px;font-size:0.72rem;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;">
           Ver negocios ▾
@@ -178,6 +175,11 @@ function renderAdminStats(stats) {
       <div id="negociosVendedor-${s.id}" style="display:none;margin-top:12px;border-top:1px solid var(--border);padding-top:12px;"></div>
     </div>`;
   }).join('');
+
+  // Event delegation para botones de toggle (evita onclick inline con datos de usuario)
+  container.querySelectorAll('[data-vendedor-id]').forEach(btn => {
+    btn.addEventListener('click', () => toggleNegociosVendedor(Number(btn.dataset.vendedorId), btn.dataset.vendedorNombre));
+  });
 }
 
 async function toggleNegociosVendedor(vendedorId, nombre) {
@@ -221,12 +223,12 @@ async function toggleNegociosVendedor(vendedorId, nombre) {
           return `
           <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:9px 12px;display:flex;flex-direction:column;gap:3px;">
             <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:6px;">
-              <div style="font-size:0.82rem;font-weight:600;color:var(--text);line-height:1.3;">${n.nombre}</div>
-              <span style="flex-shrink:0;font-size:0.65rem;color:${color};background:${color}1a;border:1px solid ${color}44;padding:2px 7px;border-radius:20px;">${label}</span>
+              <div style="font-size:0.82rem;font-weight:600;color:var(--text);line-height:1.3;">${_esc(n.nombre)}</div>
+              <span style="flex-shrink:0;font-size:0.65rem;color:${color};background:${color}1a;border:1px solid ${color}44;padding:2px 7px;border-radius:20px;">${_esc(label)}</span>
             </div>
-            <div style="font-size:0.72rem;color:var(--text-dim);">📍 ${n.direccion ? n.direccion.split(',')[0] : '—'} ${n.barrio ? '· ' + n.barrio : ''}</div>
-            <div style="font-size:0.7rem;color:var(--text-dim);">📅 ${fecha}${n.tipo_negocio ? ' · ' + n.tipo_negocio : ''}</div>
-            ${n.notas ? `<div style="font-size:0.72rem;color:var(--text-mid);margin-top:2px;line-height:1.4;">💬 ${n.notas}</div>` : ''}
+            <div style="font-size:0.72rem;color:var(--text-dim);">📍 ${n.direccion ? _esc(n.direccion.split(',')[0]) : '—'} ${n.barrio ? '· ' + _esc(n.barrio) : ''}</div>
+            <div style="font-size:0.7rem;color:var(--text-dim);">📅 ${_esc(fecha)}${n.tipo_negocio ? ' · ' + _esc(n.tipo_negocio) : ''}</div>
+            ${n.notas ? `<div style="font-size:0.72rem;color:var(--text-mid);margin-top:2px;line-height:1.4;">💬 ${_esc(n.notas)}</div>` : ''}
           </div>`;
         }).join('')}
       </div>`;

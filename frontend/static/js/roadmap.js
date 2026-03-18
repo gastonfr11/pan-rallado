@@ -90,11 +90,11 @@ function mostrarResultadosBusqueda(resultados, query) {
     <div class="negocio-card${n.ya_visitado ? ' ya-visitado' : ''}" id="card-${i}" onclick="${n.ya_visitado ? '' : `seleccionarNegocio(${i})`}">
       <div class="negocio-body" style="flex:1;">
         <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:4px;">
-          <div class="negocio-badge">${n.tipo}</div>
+          <div class="negocio-badge">${_esc(n.tipo)}</div>
           ${n.ya_visitado ? '<div class="badge-ya-visitado">✅ Ya visitado</div>' : ''}
         </div>
-        <div class="negocio-nombre">${n.nombre}</div>
-        <div class="negocio-dir">📍 ${n.direccion.split(',')[0]}</div>
+        <div class="negocio-nombre">${_esc(n.nombre)}</div>
+        <div class="negocio-dir">📍 ${_esc(n.direccion.split(',')[0])}</div>
         <div class="negocio-actions">
           <a class="btn-waze" href="https://waze.com/ul?ll=${n.lat},${n.lng}&navigate=yes" target="_blank" onclick="event.stopPropagation()">🚗 Waze</a>
           ${!n.ya_visitado ? `
@@ -110,14 +110,14 @@ function mostrarResultadosBusqueda(resultados, query) {
   const mc = document.getElementById('mapChips');
   mc.style.display = 'flex';
   mc.innerHTML = resultados.map((n, i) =>
-    `<div class="map-chip${n.ya_visitado ? ' visitado' : ''}" id="chip-${i}" onclick="seleccionarNegocio(${i})">${n.nombre.split(' ').slice(0, 2).join(' ')}</div>`
+    `<div class="map-chip${n.ya_visitado ? ' visitado' : ''}" id="chip-${i}" onclick="seleccionarNegocio(${i})">${_esc(n.nombre.split(' ').slice(0, 2).join(' '))}</div>`
   ).join('');
 
   // Chat chips (solo no visitados)
   document.getElementById('chatSelector').style.display = 'block';
   document.getElementById('chatChips').innerHTML = resultados
     .map((n, i) => n.ya_visitado ? '' :
-      `<div class="chat-negocio-chip" id="chatChip-${i}" onclick="abrirChatNegocio(${i})">${n.nombre.split(' ').slice(0, 3).join(' ')}</div>`
+      `<div class="chat-negocio-chip" id="chatChip-${i}" onclick="abrirChatNegocio(${i})">${_esc(n.nombre.split(' ').slice(0, 3).join(' '))}</div>`
     ).join('');
 
   iniciarMapa(resultados);
@@ -147,8 +147,8 @@ async function recomendarBarrio() {
     card.style.display = 'block';
     card.innerHTML = `
       <div class="recomendacion-card">
-        <div class="recomendacion-barrio">📍 ${barrio}</div>
-        <div class="recomendacion-razon">${razon}</div>
+        <div class="recomendacion-barrio">📍 ${_esc(barrio)}</div>
+        <div class="recomendacion-razon">${_esc(razon)}</div>
       </div>`;
   } catch (e) {
     showToast('❌ Error al analizar barrios');
@@ -221,12 +221,12 @@ function mostrarResultados(data) {
     <div class="negocio-card" id="card-${i}" onclick="seleccionarNegocio(${i})">
       <div class="negocio-num">${i + 1}</div>
       <div class="negocio-body">
-        <div class="negocio-badge">${n.tipo || 'negocio'}</div>
-        <div class="negocio-nombre">${n.nombre}</div>
-        <div class="negocio-dir">📍 ${n.direccion.split(',')[0]}</div>
-        <div class="negocio-razon">💡 ${n.razon}</div>
+        <div class="negocio-badge">${_esc(n.tipo) || 'negocio'}</div>
+        <div class="negocio-nombre">${_esc(n.nombre)}</div>
+        <div class="negocio-dir">📍 ${_esc(n.direccion.split(',')[0])}</div>
+        <div class="negocio-razon">💡 ${_esc(n.razon)}</div>
         <div class="negocio-actions">
-          <a class="btn-waze" href="https://waze.com/ul?ll=${n.lat},${n.lng}&navigate=yes" target="_blank" onclick="event.stopPropagation()">🚗 Waze</a>
+          <a class="btn-waze" href="https://waze.com/ul?ll=${_escAttr(n.lat)},${_escAttr(n.lng)}&navigate=yes" target="_blank" onclick="event.stopPropagation()">🚗 Waze</a>
           <button class="btn-chat-quick" onclick="event.stopPropagation();abrirChatNegocio(${i})">💬 Chat</button>
           <button class="btn-visitado" id="visitado-${i}" onclick="event.stopPropagation();marcarVisitado(${i})">✅ Visitado</button>
         </div>
@@ -238,13 +238,13 @@ function mostrarResultados(data) {
   const mc = document.getElementById('mapChips');
   mc.style.display = 'flex';
   mc.innerHTML = data.seleccionados.map((n, i) =>
-    `<div class="map-chip" id="chip-${i}" onclick="seleccionarNegocio(${i})">${i + 1}. ${n.nombre.split(' ').slice(0, 2).join(' ')}</div>`
+    `<div class="map-chip" id="chip-${i}" onclick="seleccionarNegocio(${i})">${i + 1}. ${_esc(n.nombre.split(' ').slice(0, 2).join(' '))}</div>`
   ).join('');
 
   // Chat chips
   document.getElementById('chatSelector').style.display = 'block';
   document.getElementById('chatChips').innerHTML = data.seleccionados.map((n, i) =>
-    `<div class="chat-negocio-chip" id="chatChip-${i}" onclick="abrirChatNegocio(${i})">${i + 1}. ${n.nombre.split(' ').slice(0, 3).join(' ')}</div>`
+    `<div class="chat-negocio-chip" id="chatChip-${i}" onclick="abrirChatNegocio(${i})">${i + 1}. ${_esc(n.nombre.split(' ').slice(0, 3).join(' '))}</div>`
   ).join('');
 
   iniciarMapa(data.seleccionados);

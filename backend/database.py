@@ -1,6 +1,8 @@
 # backend/database.py
 import os
+import atexit
 import psycopg2
+from psycopg2.pool import ThreadedConnectionPool
 from psycopg2.extras import RealDictCursor
 from datetime import datetime
 from dotenv import load_dotenv
@@ -9,8 +11,30 @@ load_dotenv(override=True)
 
 DATABASE_URL = os.getenv("DATABASE_URL")
 
+_pool: ThreadedConnectionPool | None = None
+
+def _get_pool() -> ThreadedConnectionPool:
+    global _pool
+    if _pool is None:
+        _pool = ThreadedConnectionPool(minconn=1, maxconn=10, dsn=DATABASE_URL)
+        atexit.register(lambda: _pool.closeall())
+    return _pool
+
 def get_conn():
-    return psycopg2.connect(DATABASE_URL)
+    pool = _get_pool()
+    conn = pool.getconn()
+    # Reemplaza close() para devolver la conexión al pool en vez de cerrarla.
+    # Hace rollback si la conexión tiene una transacción pendiente para evitar
+    # devolver una conexión en estado inválido.
+    def _return_to_pool():
+        try:
+            if conn.status != psycopg2.extensions.STATUS_READY:
+                conn.rollback()
+        except Exception:
+            pass
+        pool.putconn(conn)
+    conn.close = _return_to_pool
+    return conn
 
 def init_db():
     conn = get_conn()
@@ -63,15 +87,24 @@ def init_db():
 
     conn.commit()
 
-    # Crear admin por defecto si no existe ninguno
-    admin_email = os.getenv("ADMIN_EMAIL", "admin@panrallado.com")
-    admin_password = os.getenv("ADMIN_PASSWORD", "admin1234")
-    admin_nombre = os.getenv("ADMIN_NOMBRE", "Administrador")
-
+    # Crear admin si no existe ninguno — requiere variables de entorno obligatorias
     cursor.execute("SELECT id FROM usuarios WHERE rol = 'admin' LIMIT 1")
     admin = cursor.fetchone()
 
     if not admin:
+        admin_email = os.getenv("ADMIN_EMAIL")
+        admin_password = os.getenv("ADMIN_PASSWORD")
+        admin_nombre = os.getenv("ADMIN_NOMBRE", "Administrador")
+        if not admin_email or not admin_password:
+            import logging
+            logging.warning(
+                "No existe ningún admin y ADMIN_EMAIL/ADMIN_PASSWORD no están definidas. "
+                "Configurá esas variables de entorno para crear el primer usuario admin."
+            )
+            conn.commit()
+            cursor.close()
+            conn.close()
+            return
         from auth import hash_password
         cursor.execute(
             "INSERT INTO usuarios (email, password_hash, nombre, rol) VALUES (%s, %s, %s, 'admin') RETURNING id",

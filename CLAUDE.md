@@ -28,6 +28,11 @@ TWILIO_ACCOUNT_SID=
 TWILIO_AUTH_TOKEN=
 TWILIO_WHATSAPP_FROM=
 TWILIO_WHATSAPP_TO=
+SECRET_KEY=                    # String aleatorio 32+ chars (obligatorio, sin default)
+ADMIN_EMAIL=                   # Email del primer admin (obligatorio si no existe ninguno)
+ADMIN_PASSWORD=                # Password del primer admin (obligatorio si no existe ninguno)
+ALLOWED_ORIGINS=               # URL de producción, ej: https://tu-app.up.railway.app
+ENVIRONMENT=production         # Activa cookie Secure y otros ajustes de producción
 ```
 
 ## Running tests

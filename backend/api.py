@@ -4,25 +4,38 @@ import os
 import re
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from typing import Optional, List
-from fastapi import FastAPI, Depends, HTTPException
+import logging
+from typing import Optional, List, Literal
+from fastapi import FastAPI, Depends, HTTPException, Request
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, EmailStr, Field, field_validator
+
+logger = logging.getLogger(__name__)
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 import json
 import random
 import anthropic
 import main
 from auth import get_current_user, require_admin, verify_password, hash_password, create_token
 
+limiter = Limiter(key_func=get_remote_address)
+
 app = FastAPI(title="Pan Rallado API")
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+_ALLOWED_ORIGINS = [o.strip() for o in os.getenv("ALLOWED_ORIGINS", "http://localhost:8000").split(",") if o.strip()]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=_ALLOWED_ORIGINS,
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "PUT", "DELETE"],
+    allow_headers=["Authorization", "Content-Type"],
 )
 
 static_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "frontend", "static")
@@ -33,43 +46,43 @@ anthropic_client = anthropic.Anthropic()
 # ── MODELS ────────────────────────────────────────────
 
 class LoginRequest(BaseModel):
-    email: str
+    email: EmailStr
     password: str
 
 class CreateUserRequest(BaseModel):
-    email: str
+    email: EmailStr
     password: str
-    nombre: str
-    rol: str = "vendedor"
+    nombre: str = Field(max_length=100)
+    rol: Literal["vendedor", "admin"] = "vendedor"
 
 class RoadmapRequest(BaseModel):
-    barrio: str
+    barrio: str = Field(max_length=100)
     enviar_whatsapp: bool = False
-    modo: str = "chico"
+    modo: Literal["chico", "grande"] = "chico"
 
 class Mensaje(BaseModel):
     role: str
-    content: str
+    content: str = Field(max_length=4000)
 
 class ChatRequest(BaseModel):
     mensajes: List[Mensaje]
     negocio: Optional[dict] = None
 
 class MarcarVisitadoRequest(BaseModel):
-    nombre: str
-    direccion: str
-    resultado: str = "visitado"
-    notas: str = ""
-    telefono: Optional[str] = None
-    email: Optional[str] = None
-    horario: Optional[str] = None
-    tipo_negocio: Optional[str] = None
-    nivel_operativo: Optional[str] = None
+    nombre: str = Field(max_length=200)
+    direccion: str = Field(max_length=300)
+    resultado: Literal["visitado", "interesado", "cliente", "no_interesado"] = "visitado"
+    notas: str = Field(default="", max_length=2000)
+    telefono: Optional[str] = Field(default=None, max_length=30)
+    email: Optional[str] = Field(default=None, max_length=200)
+    horario: Optional[str] = Field(default=None, max_length=200)
+    tipo_negocio: Optional[str] = Field(default=None, max_length=100)
+    nivel_operativo: Optional[str] = Field(default=None, max_length=100)
     tiene_rotiseria: bool = False
     tiene_produccion_propia: bool = False
     vendedor_id: Optional[int] = None
-    barrio: Optional[str] = None
-    tipo: Optional[str] = None
+    barrio: Optional[str] = Field(default=None, max_length=100)
+    tipo: Optional[str] = Field(default=None, max_length=100)
 
     @field_validator('telefono', 'email', 'horario', 'tipo_negocio', 'nivel_operativo', mode='before')
     @classmethod
@@ -80,17 +93,17 @@ class MarcarVisitadoRequest(BaseModel):
 
 class AgregarNotaRequest(BaseModel):
     negocio_id: int
-    texto: str
+    texto: str = Field(max_length=2000)
 
 class DesmarcarVisitadoRequest(BaseModel):
-    nombre: str
-    direccion: str
+    nombre: str = Field(max_length=200)
+    direccion: str = Field(max_length=300)
     vendedor_id: Optional[int] = None
     negocio_id: Optional[int] = None
 
 class GenerarMensajeWppRequest(BaseModel):
     negocio: dict
-    tipo: str  # presentacion, seguimiento, oferta, recordatorio
+    tipo: Literal["presentacion", "seguimiento", "oferta", "recordatorio"]
 
 # ── TOOLS DEFINITION ──────────────────────────────────
 
@@ -167,21 +180,37 @@ TOOLS = [
 # ── AUTH ENDPOINTS ─────────────────────────────────────
 
 @app.post("/login")
-def login(req: LoginRequest):
+@limiter.limit("5/minute")
+def login(request: Request, req: LoginRequest):
     from database import obtener_usuario_por_email
     user = obtener_usuario_por_email(req.email)
     if not user or not verify_password(req.password, user["password_hash"]):
         raise HTTPException(status_code=401, detail="Email o contraseña incorrectos")
     token = create_token(user["id"], user["email"], user["nombre"], user["rol"])
-    return {
-        "token": token,
+    is_production = os.getenv("ENVIRONMENT", "development") == "production"
+    response = JSONResponse({
         "usuario": {
             "id": user["id"],
             "email": user["email"],
             "nombre": user["nombre"],
             "rol": user["rol"],
         }
-    }
+    })
+    response.set_cookie(
+        key="authToken",
+        value=token,
+        httponly=True,
+        secure=is_production,
+        samesite="strict",
+        max_age=7 * 24 * 60 * 60,
+    )
+    return response
+
+@app.post("/logout")
+def logout():
+    response = JSONResponse({"ok": True})
+    response.delete_cookie("authToken", httponly=True, samesite="strict")
+    return response
 
 @app.get("/me")
 def me(current_user: dict = Depends(get_current_user)):
@@ -253,7 +282,7 @@ def generar_roadmap(req: RoadmapRequest, current_user: dict = Depends(get_curren
                 tiempo=resultado.get("tiempo_min")
             )
         except Exception as e:
-            print(f"❌ Error WhatsApp: {e}")
+            logger.error("Error al enviar WhatsApp: %s", type(e).__name__)
     return resultado    
 
 @app.post("/generar-mensaje-wpp")
@@ -267,10 +296,12 @@ def generar_mensaje_wpp(req: GenerarMensajeWppRequest, current_user: dict = Depe
     }
     instruccion = tipos.get(req.tipo, tipos["presentacion"])
 
-    prompt = f"""Negocio: {n.get('nombre')}
-Tipo: {n.get('tipo_negocio') or n.get('tipo', 'negocio')}
-Dirección: {n.get('direccion', '').split(',')[0]}
-Notas: {n.get('notas') or 'Sin notas'}
+    prompt = f"""<datos_negocio>
+Negocio: {str(n.get('nombre', ''))[:200]}
+Tipo: {str(n.get('tipo_negocio') or n.get('tipo', 'negocio'))[:100]}
+Dirección: {str(n.get('direccion', ''))[:200].split(',')[0]}
+Notas: {str(n.get('notas') or 'Sin notas')[:500]}
+</datos_negocio>
 
 {instruccion}
 
@@ -292,19 +323,24 @@ Reglas:
 def chat(req: ChatRequest, current_user: dict = Depends(get_current_user)):
     vendedor_id = current_user["id"]
 
+    def _safe(val, max_len: int = 200) -> str:
+        return str(val or '')[:max_len]
+
     if req.negocio:
+        n = req.negocio
         system_prompt = f"""Sos un asistente comercial de una distribuidora de pan rallado en Uruguay.
-Negocio actual:
-- Nombre: {req.negocio.get('nombre')}
-- Dirección: {req.negocio.get('direccion')}
-- Tipo: {req.negocio.get('tipo')}
-- Por qué fue seleccionado: {req.negocio.get('razon')}
-- Teléfono: {req.negocio.get('telefono') or 'No disponible'}
-- Horario: {req.negocio.get('horario') or 'No disponible'}
-- Email: {req.negocio.get('email') or 'No disponible'}
-- Tipo de negocio: {req.negocio.get('tipo_negocio') or 'No disponible'}
-- Nivel operativo: {req.negocio.get('nivel_operativo') or 'No disponible'}
-- Notas de visita: {req.negocio.get('notas') or 'Sin notas'}
+<datos_negocio>
+- Nombre: {_safe(n.get('nombre'))}
+- Dirección: {_safe(n.get('direccion'), 300)}
+- Tipo: {_safe(n.get('tipo'))}
+- Por qué fue seleccionado: {_safe(n.get('razon'), 300)}
+- Teléfono: {_safe(n.get('telefono')) or 'No disponible'}
+- Horario: {_safe(n.get('horario')) or 'No disponible'}
+- Email: {_safe(n.get('email')) or 'No disponible'}
+- Tipo de negocio: {_safe(n.get('tipo_negocio')) or 'No disponible'}
+- Nivel operativo: {_safe(n.get('nivel_operativo')) or 'No disponible'}
+- Notas de visita: {_safe(n.get('notas'), 500) or 'Sin notas'}
+</datos_negocio>
 
 Respondé siempre de forma breve y directa. Máximo 3 oraciones. Sin introducciones ni cierres. Solo lo esencial.
 Cuando el vendedor quiera registrar una visita, agregar notas, buscar negocios o enviar WhatsApp, usá las herramientas disponibles."""
@@ -427,7 +463,7 @@ def buscar_por_nombre(q: str, barrio: str = "Todo Montevideo", current_user: dic
 
 
 @app.get("/recomendar-barrio")
-def recomendar_barrio(modo: str = "chico", current_user: dict = Depends(get_current_user)):
+def recomendar_barrio(modo: Literal["chico", "grande"] = "chico", current_user: dict = Depends(get_current_user)):
     vendedor_id = current_user["id"]
     from database import obtener_barrios_recientes
 
@@ -519,8 +555,13 @@ def get_historial(barrio: str = None, current_user: dict = Depends(get_current_u
             return {"negocios": obtener_historial_zona(main.BARRIOS_MONTEVIDEO, vendedor_id=vendedor_id)}
         return {"negocios": obtener_historial(barrio, vendedor_id=vendedor_id)}
 
+class ResetearDbRequest(BaseModel):
+    confirmar: str
+
 @app.post("/resetear-db")
-def resetear_db(current_user: dict = Depends(require_admin)):
+def resetear_db(req: ResetearDbRequest, current_user: dict = Depends(require_admin)):
+    if req.confirmar != "ELIMINAR TODO":
+        raise HTTPException(status_code=400, detail="Confirmación incorrecta. Enviá confirmar: 'ELIMINAR TODO'")
     from database import resetear_db as db_reset
     db_reset()
     return {"ok": True}

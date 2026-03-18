@@ -1,8 +1,11 @@
 import googlemaps
+import logging
 import os
 from dotenv import load_dotenv
 
 load_dotenv(override=True)
+
+logger = logging.getLogger(__name__)
 
 gmaps = googlemaps.Client(key=os.getenv("GOOGLE_MAPS_API_KEY"))
 
@@ -15,24 +18,24 @@ def optimizar_ruta(negocios: list, origen: str = "Tomás Gomensoro 3027, Montevi
     try:
         resultado = gmaps.directions(
             origin=origen,
-            destination=origen,  # vuelve al origen, así todos son waypoints
+            destination=origen,
             waypoints=destinos,
             optimize_waypoints=True,
             mode="driving",
             language="es"
         )
     except Exception as e:
-        print(f"Error al optimizar ruta: {e}")
+        logger.error("Error al optimizar ruta: %s", type(e).__name__)
         return negocios, None, None
 
     if not resultado:
-        print("No se pudo optimizar la ruta, se mantiene el orden original")
+        logger.warning("No se pudo optimizar la ruta, se mantiene el orden original")
         return negocios, None, None
 
     orden_optimizado = resultado[0]["waypoint_order"]
 
     if len(orden_optimizado) != len(negocios):
-        print(f"   ⚠️ Orden inesperado ({len(orden_optimizado)} vs {len(negocios)}), se mantiene orden original")
+        logger.warning("Orden inesperado (%d vs %d), se mantiene orden original", len(orden_optimizado), len(negocios))
         return negocios, None, None
 
     negocios_ordenados = [negocios[i] for i in orden_optimizado]
@@ -41,7 +44,6 @@ def optimizar_ruta(negocios: list, origen: str = "Tomás Gomensoro 3027, Montevi
     distancia_total = sum(leg["distance"]["value"] for leg in legs) / 1000
     tiempo_total = sum(leg["duration"]["value"] for leg in legs) // 60
 
-    print(f"   🗺️  Distancia total: {distancia_total:.1f} km")
-    print(f"   ⏱️  Tiempo estimado de viaje: {tiempo_total} minutos\n")
+    logger.info("Ruta optimizada: %.1f km, %d minutos", distancia_total, tiempo_total)
 
     return negocios_ordenados, distancia_total, tiempo_total

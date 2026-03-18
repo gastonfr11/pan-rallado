@@ -18,10 +18,7 @@ const screens = {
 };
 
 async function authFetch(url, options = {}) {
-  const token = localStorage.getItem('authToken');
-  const headers = { ...(options.headers || {}) };
-  if (token) headers['Authorization'] = `Bearer ${token}`;
-  const res = await fetch(url, { ...options, headers });
+  const res = await fetch(url, { ...options, credentials: 'include' });
   if (res.status === 401) {
     logout();
     throw new Error('Unauthorized');

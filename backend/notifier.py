@@ -1,9 +1,12 @@
 from twilio.rest import Client
 from dotenv import load_dotenv
+import logging
 import os
 from datetime import datetime
 
 load_dotenv(override=True)
+
+logger = logging.getLogger(__name__)
 
 def enviar_roadmap_whatsapp(barrio: str, negocios: list, distancia: float = None, tiempo: int = None):
     account_sid = os.getenv("TWILIO_ACCOUNT_SID")
@@ -12,7 +15,7 @@ def enviar_roadmap_whatsapp(barrio: str, negocios: list, distancia: float = None
     to_number = os.getenv("TWILIO_WHATSAPP_TO")
 
     if not all([account_sid, auth_token, from_number, to_number]):
-        print("⚠️ Variables de Twilio no configuradas")
+        logger.warning("Variables de Twilio no configuradas, se omite el envío de WhatsApp")
         return
 
     client = Client(account_sid, auth_token)
@@ -37,6 +40,6 @@ def enviar_roadmap_whatsapp(barrio: str, negocios: list, distancia: float = None
             from_=from_number,
             to=to_number
         )
-        print("✅ Roadmap enviado por WhatsApp")
+        logger.info("Roadmap enviado por WhatsApp para barrio %s", barrio)
     except Exception as e:
-        print(f"❌ Error al enviar WhatsApp: {e}")
+        logger.error("Error al enviar WhatsApp: %s", type(e).__name__)

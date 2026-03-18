@@ -213,12 +213,24 @@ async function abrirWppDesdeChat(negocio, tipo) {
     const d = document.createElement('div');
     d.className = 'msg assistant';
     d.style.cssText = 'background:rgba(37,211,102,0.08);border:1px solid rgba(37,211,102,0.25);';
-    d.innerHTML = `<div style="font-size:0.75rem;color:#25d366;margin-bottom:6px;font-weight:600;">📲 MENSAJE GENERADO</div>
-      <div style="color:var(--text);margin-bottom:10px;white-space:pre-wrap;">${data.mensaje}</div>
-      <button onclick="abrirWhatsAppDirecto('${negocio.telefono.replace(/[\s\-]/g,'')}', this)" 
-        style="background:#25d366;border:none;color:#fff;padding:8px 16px;border-radius:8px;font-size:0.8rem;cursor:pointer;font-family:'DM Sans',sans-serif;width:100%;">
-        Abrir en WhatsApp ↗
-      </button>`;
+
+    const label = document.createElement('div');
+    label.style.cssText = 'font-size:0.75rem;color:#25d366;margin-bottom:6px;font-weight:600;';
+    label.textContent = '📲 MENSAJE GENERADO';
+
+    const msgText = document.createElement('div');
+    msgText.style.cssText = 'color:var(--text);margin-bottom:10px;white-space:pre-wrap;';
+    msgText.textContent = data.mensaje;
+
+    const btn = document.createElement('button');
+    btn.style.cssText = 'background:#25d366;border:none;color:#fff;padding:8px 16px;border-radius:8px;font-size:0.8rem;cursor:pointer;font-family:\'DM Sans\',sans-serif;width:100%;';
+    btn.textContent = 'Abrir en WhatsApp ↗';
+    const telLimpio = negocio.telefono.replace(/[\s\-]/g, '');
+    btn.addEventListener('click', () => abrirWhatsAppDirecto(telLimpio, msgText));
+
+    d.appendChild(label);
+    d.appendChild(msgText);
+    d.appendChild(btn);
     c.appendChild(d);
     c.scrollTop = c.scrollHeight;
 
@@ -228,8 +240,8 @@ async function abrirWppDesdeChat(negocio, tipo) {
   }
 }
 
-function abrirWhatsAppDirecto(telRaw, btn) {
-  const mensaje = btn.previousElementSibling.textContent;
+function abrirWhatsAppDirecto(telRaw, msgEl) {
+  const mensaje = msgEl.textContent;
   let tel = telRaw.replace(/[\s\-\+]/g, '');
   if (!tel.startsWith('598')) tel = '598' + tel;
   window.open(`https://wa.me/${tel}?text=${encodeURIComponent(mensaje)}`, '_blank');
