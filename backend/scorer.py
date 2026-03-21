@@ -1,5 +1,5 @@
 # backend/scorer.py
-import anthropic
+from groq import Groq
 import logging
 from dotenv import load_dotenv
 import json
@@ -7,7 +7,7 @@ import json
 load_dotenv(override=True)
 
 logger = logging.getLogger(__name__)
-client = anthropic.Anthropic()
+client = Groq()
 
 PROMPT_CHICO = """
 Sos un experto comercial de una distribuidora de pan rallado en Uruguay (Montevideo).
@@ -154,12 +154,12 @@ Seleccioná exactamente 10 negocios ordenados de mayor a menor potencial. Si hay
 """
 
     def _llamar():
-        response = client.messages.create(
-            model="claude-haiku-4-5-20251001",
+        response = client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
             max_tokens=1024,
             messages=[{"role": "user", "content": prompt}]
         )
-        return response.content[0].text.strip()
+        return response.choices[0].message.content.strip()
 
     def _parsear(contenido):
         if contenido.startswith("```"):

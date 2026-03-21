@@ -18,7 +18,7 @@ from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 import json
 import random
-import anthropic
+from groq import Groq
 import main
 from auth import get_current_user, require_admin, verify_password, hash_password, create_token
 
@@ -41,7 +41,7 @@ app.add_middleware(
 static_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "frontend", "static")
 app.mount("/static", StaticFiles(directory=static_path), name="static")
 
-anthropic_client = anthropic.Anthropic()
+groq_client = Groq()
 
 # ── MODELS ────────────────────────────────────────────
 
@@ -109,70 +109,82 @@ class GenerarMensajeWppRequest(BaseModel):
 
 TOOLS = [
     {
-        "name": "marcar_visitado",
-        "description": "Marca el negocio activo como visitado, cliente, interesado o no interesado. Usá esta herramienta cuando el vendedor diga cosas como 'marcalo como cliente', 'fue una visita exitosa', 'no les interesa', 'agregá que estaban interesados'.",
-        "input_schema": {
-            "type": "object",
-            "properties": {
-                "resultado": {
-                    "type": "string",
-                    "enum": ["visitado", "interesado", "cliente", "no_interesado"],
-                    "description": "Estado de la visita"
+        "type": "function",
+        "function": {
+            "name": "marcar_visitado",
+            "description": "Marca el negocio activo como visitado, cliente, interesado o no interesado. Usá esta herramienta cuando el vendedor diga cosas como 'marcalo como cliente', 'fue una visita exitosa', 'no les interesa', 'agregá que estaban interesados'.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "resultado": {
+                        "type": "string",
+                        "enum": ["visitado", "interesado", "cliente", "no_interesado"],
+                        "description": "Estado de la visita"
+                    },
+                    "notas": {
+                        "type": "string",
+                        "description": "Notas opcionales sobre la visita"
+                    }
                 },
-                "notas": {
-                    "type": "string",
-                    "description": "Notas opcionales sobre la visita"
-                }
-            },
-            "required": ["resultado"]
+                "required": ["resultado"]
+            }
         }
     },
     {
-        "name": "agregar_nota",
-        "description": "Agrega o actualiza las notas del negocio activo sin cambiar el estado. Usá cuando el vendedor quiera registrar información como 'anotá que el dueño se llama Juan', 'guardá que abren a las 9'.",
-        "input_schema": {
-            "type": "object",
-            "properties": {
-                "notas": {
-                    "type": "string",
-                    "description": "Texto de la nota a guardar"
-                }
-            },
-            "required": ["notas"]
-        }
-    },
-    {
-        "name": "buscar_negocios",
-        "description": "Genera un roadmap de negocios para un barrio de Montevideo. Usá cuando el vendedor pregunte por negocios en un barrio o pida buscar clientes en una zona.",
-        "input_schema": {
-            "type": "object",
-            "properties": {
-                "barrio": {
-                    "type": "string",
-                    "description": "Nombre del barrio de Montevideo"
+        "type": "function",
+        "function": {
+            "name": "agregar_nota",
+            "description": "Agrega o actualiza las notas del negocio activo sin cambiar el estado. Usá cuando el vendedor quiera registrar información como 'anotá que el dueño se llama Juan', 'guardá que abren a las 9'.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "notas": {
+                        "type": "string",
+                        "description": "Texto de la nota a guardar"
+                    }
                 },
-                "modo": {
-                    "type": "string",
-                    "enum": ["chico", "grande"],
-                    "description": "chico para negocios minoristas, grande para clientes industriales"
-                }
-            },
-            "required": ["barrio"]
+                "required": ["notas"]
+            }
         }
     },
     {
-        "name": "enviar_whatsapp",
-        "description": "Genera y abre WhatsApp con un mensaje personalizado para el negocio activo. Usá cuando el vendedor diga 'mandále un WhatsApp', 'enviá un mensaje de seguimiento', 'mandá una oferta', etc.",
-        "input_schema": {
-            "type": "object",
-            "properties": {
-                "tipo": {
-                    "type": "string",
-                    "enum": ["presentacion", "seguimiento", "oferta", "recordatorio"],
-                    "description": "Tipo de mensaje a generar"
-                }
-            },
-            "required": ["tipo"]
+        "type": "function",
+        "function": {
+            "name": "buscar_negocios",
+            "description": "Genera un roadmap de negocios para un barrio de Montevideo. Usá cuando el vendedor pregunte por negocios en un barrio o pida buscar clientes en una zona.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "barrio": {
+                        "type": "string",
+                        "description": "Nombre del barrio de Montevideo"
+                    },
+                    "modo": {
+                        "type": "string",
+                        "enum": ["chico", "grande"],
+                        "description": "chico para negocios minoristas, grande para clientes industriales"
+                    }
+                },
+                "required": ["barrio"]
+            }
+        }
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "enviar_whatsapp",
+            "description": "Genera y abre WhatsApp con un mensaje personalizado para el negocio activo. Usá cuando el vendedor diga 'mandále un WhatsApp', 'enviá un mensaje de seguimiento', 'mandá una oferta', etc.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "tipo": {
+                        "type": "string",
+                        "enum": ["presentacion", "seguimiento", "oferta", "recordatorio"],
+                        "description": "Tipo de mensaje a generar"
+                    }
+                },
+                "required": ["tipo"]
+            }
         }
     }
 ]
@@ -312,12 +324,12 @@ Reglas:
 - Sin saludos genéricos tipo "Estimado cliente"
 - Solo el texto del mensaje, sin explicaciones"""
 
-    response = anthropic_client.messages.create(
-        model="claude-sonnet-4-20250514",
+    response = groq_client.chat.completions.create(
+        model="llama-3.3-70b-versatile",
         max_tokens=256,
         messages=[{"role": "user", "content": prompt}]
     )
-    return {"mensaje": response.content[0].text.strip()}
+    return {"mensaje": response.choices[0].message.content.strip()}
 
 @app.post("/chat")
 def chat(req: ChatRequest, current_user: dict = Depends(get_current_user)):
@@ -351,19 +363,20 @@ Cuando el vendedor quiera buscar negocios en un barrio, usá la herramienta busc
 
     tools = TOOLS if req.negocio else [TOOLS[2]]
 
-    response = anthropic_client.messages.create(
-        model="claude-sonnet-4-20250514",
+    response = groq_client.chat.completions.create(
+        model="llama-3.3-70b-versatile",
         max_tokens=1024,
-        system=system_prompt,
+        messages=[{"role": "system", "content": system_prompt}] + [{"role": m.role, "content": m.content} for m in req.mensajes],
         tools=tools,
-        messages=[{"role": m.role, "content": m.content} for m in req.mensajes]
+        tool_choice="auto"
     )
 
-    tool_use_block = next((b for b in response.content if b.type == "tool_use"), None)
+    message = response.choices[0].message
+    tool_call = message.tool_calls[0] if message.tool_calls else None
 
-    if tool_use_block:
-        tool_name = tool_use_block.name
-        tool_input = tool_use_block.input
+    if tool_call:
+        tool_name = tool_call.function.name
+        tool_input = json.loads(tool_call.function.arguments)
 
         if tool_name == "marcar_visitado" and req.negocio:
             from database import marcar_visitado as db_marcar
@@ -434,7 +447,7 @@ Cuando el vendedor quiera buscar negocios en un barrio, usá la herramienta busc
                 }
             }
 
-    texto = next((b.text for b in response.content if hasattr(b, 'text')), '')
+    texto = message.content or ''
     return {"respuesta": texto}
 
 
@@ -502,12 +515,12 @@ Si hay barrios recientemente visitados, priorizá recomendar uno diferente.
 Respondé SOLO con un JSON válido, sin markdown ni texto adicional:
 {{"barrio": "nombre exacto del barrio de la lista", "razon": "explicación de 1-2 oraciones en español rioplatense"}}"""
 
-        response = anthropic_client.messages.create(
-            model="claude-sonnet-4-6",
+        response = groq_client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
             max_tokens=250,
             messages=[{"role": "user", "content": prompt}]
         )
-        resultado = json.loads(response.content[0].text.strip())
+        resultado = json.loads(response.choices[0].message.content.strip())
         barrio = resultado.get("barrio", "")
         barrio_match = next((b for b in main.BARRIOS.keys() if b.lower() == barrio.lower()), None)
         return barrio_match or (barrios_disponibles[0] if barrios_disponibles else "Pocitos"), resultado.get("razon", "")

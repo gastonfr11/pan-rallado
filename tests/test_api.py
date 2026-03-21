@@ -12,9 +12,9 @@ MOCK_USER = {"id": 1, "email": "test@test.com", "nombre": "Test", "rol": "admin"
 
 @pytest.fixture(scope="module")
 def client():
-    """TestClient with database, anthropic, and auth mocked."""
+    """TestClient with database, groq, and auth mocked."""
     with patch("psycopg2.connect", return_value=MagicMock()), \
-         patch("anthropic.Anthropic", return_value=MagicMock()):
+         patch("groq.Groq", return_value=MagicMock()):
         import api
         from auth import get_current_user, require_admin
         api.app.dependency_overrides[get_current_user] = lambda: MOCK_USER
@@ -153,14 +153,14 @@ class TestMarcarVisitado:
 # ── GET /recomendar-barrio ────────────────────────────────────────────────────
 
 class TestRecomendarBarrio:
-    def _claude_response(self, barrio, razon="Buena zona comercial."):
+    def _groq_response(self, barrio, razon="Buena zona comercial."):
         mock_resp = MagicMock()
-        mock_resp.content = [MagicMock(text=f'{{"barrio": "{barrio}", "razon": "{razon}"}}')]
+        mock_resp.choices = [MagicMock(message=MagicMock(content=f'{{"barrio": "{barrio}", "razon": "{razon}"}}'))]
         return mock_resp
 
     def test_returns_200_with_expected_keys(self, client):
         with patch("database.obtener_barrios_recientes", return_value=[]), \
-             patch("api.anthropic_client.messages.create", return_value=self._claude_response("Pocitos")):
+             patch("api.groq_client.chat.completions.create", return_value=self._groq_response("Pocitos")):
             response = client.get("/recomendar-barrio")
 
         assert response.status_code == 200
@@ -171,14 +171,14 @@ class TestRecomendarBarrio:
     def test_recommended_barrio_is_a_known_barrio(self, client):
         import main
         with patch("database.obtener_barrios_recientes", return_value=[]), \
-             patch("api.anthropic_client.messages.create", return_value=self._claude_response("Pocitos")):
+             patch("api.groq_client.chat.completions.create", return_value=self._groq_response("Pocitos")):
             response = client.get("/recomendar-barrio")
 
         assert response.json()["barrio_recomendado"] in main.BARRIOS
 
     def test_prompt_mentions_chico_categories_by_default(self, client):
         with patch("database.obtener_barrios_recientes", return_value=[]), \
-             patch("api.anthropic_client.messages.create", return_value=self._claude_response("Pocitos")) as mock_claude:
+             patch("api.groq_client.chat.completions.create", return_value=self._groq_response("Pocitos")) as mock_claude:
             client.get("/recomendar-barrio")
 
         prompt = mock_claude.call_args.kwargs["messages"][0]["content"]
@@ -186,7 +186,7 @@ class TestRecomendarBarrio:
 
     def test_prompt_mentions_grande_categories_when_modo_grande(self, client):
         with patch("database.obtener_barrios_recientes", return_value=[]), \
-             patch("api.anthropic_client.messages.create", return_value=self._claude_response("Centro")) as mock_claude:
+             patch("api.groq_client.chat.completions.create", return_value=self._groq_response("Centro")) as mock_claude:
             client.get("/recomendar-barrio?modo=grande")
 
         prompt = mock_claude.call_args.kwargs["messages"][0]["content"]
@@ -195,7 +195,7 @@ class TestRecomendarBarrio:
     def test_recent_barrios_appear_in_prompt(self, client):
         recientes = ["Pocitos", "Buceo"]
         with patch("database.obtener_barrios_recientes", return_value=recientes), \
-             patch("api.anthropic_client.messages.create", return_value=self._claude_response("Centro")) as mock_claude:
+             patch("api.groq_client.chat.completions.create", return_value=self._groq_response("Centro")) as mock_claude:
             client.get("/recomendar-barrio")
 
         prompt = mock_claude.call_args.kwargs["messages"][0]["content"]
@@ -205,10 +205,10 @@ class TestRecomendarBarrio:
     def test_fallback_when_claude_returns_invalid_json(self, client):
         import main
         bad_resp = MagicMock()
-        bad_resp.content = [MagicMock(text="No puedo decidirme")]
+        bad_resp.choices = [MagicMock(message=MagicMock(content="No puedo decidirme"))]
 
         with patch("database.obtener_barrios_recientes", return_value=[]), \
-             patch("api.anthropic_client.messages.create", return_value=bad_resp):
+             patch("api.groq_client.chat.completions.create", return_value=bad_resp):
             response = client.get("/recomendar-barrio")
 
         assert response.status_code == 200
@@ -217,7 +217,7 @@ class TestRecomendarBarrio:
     def test_fallback_when_claude_returns_unknown_barrio(self, client):
         import main
         with patch("database.obtener_barrios_recientes", return_value=[]), \
-             patch("api.anthropic_client.messages.create", return_value=self._claude_response("Barrio Fantasma XYZ")):
+             patch("api.groq_client.chat.completions.create", return_value=self._groq_response("Barrio Fantasma XYZ")):
             response = client.get("/recomendar-barrio")
 
         assert response.status_code == 200
@@ -225,21 +225,21 @@ class TestRecomendarBarrio:
 
     def test_razon_is_non_empty_string_on_success(self, client):
         with patch("database.obtener_barrios_recientes", return_value=[]), \
-             patch("api.anthropic_client.messages.create",
-                   return_value=self._claude_response("Pocitos", "Zona con muchas rotiserías.")):
+             patch("api.groq_client.chat.completions.create",
+                   return_value=self._groq_response("Pocitos", "Zona con muchas rotiserías.")):
             response = client.get("/recomendar-barrio")
 
         razon = response.json()["razon"]
         assert isinstance(razon, str)
         assert len(razon) > 0
 
-    def test_uses_haiku_model(self, client):
+    def test_uses_llama_model(self, client):
         with patch("database.obtener_barrios_recientes", return_value=[]), \
-             patch("api.anthropic_client.messages.create", return_value=self._claude_response("Pocitos")) as mock_claude:
+             patch("api.groq_client.chat.completions.create", return_value=self._groq_response("Pocitos")) as mock_groq:
             client.get("/recomendar-barrio")
 
-        model = mock_claude.call_args.kwargs["model"]
-        assert "sonnet" in model
+        model = mock_groq.call_args.kwargs["model"]
+        assert "llama" in model
 
 
 # ── POST /desmarcar-visitado ─────────────────────────────────────────────────
